@@ -1,3 +1,4 @@
+// app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 export default function LoginPage() {
 	const [email, setEmail] = useState('');
@@ -30,8 +32,15 @@ export default function LoginPage() {
 			if (result?.error) {
 				setError('Invalid email or password.');
 			} else {
-				await getSession();
-				router.push('/admin/example');
+				// Ambil session untuk mendapatkan role
+				const session = await getSession();
+
+				// Redirect berdasarkan role
+				if (session?.user?.role === 'admin') {
+					router.push('/admin/example');
+				} else {
+					router.push('/');
+				}
 			}
 		} catch (err) {
 			setError('An error occurred during login.');
@@ -107,6 +116,16 @@ export default function LoginPage() {
 							>
 								{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Login'}
 							</Button>
+						</div>
+
+						<div className="text-center text-sm">
+							<span className="text-gray-600">Belum punya akun? </span>
+							<Link
+								href="/signup"
+								className="font-semibold text-black hover:underline"
+							>
+								Daftar di sini
+							</Link>
 						</div>
 					</form>
 				</div>

@@ -11,12 +11,22 @@ import {
 	NavigationMenuList
 } from '@/components/ui/navigation-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { LogOut, Menu, Settings, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { signOut, useSession } from 'next-auth/react';
+import { Skeleton } from '../ui/skeleton';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger
+} from '../ui/dropdown-menu';
 
 export function Navbar() {
 	const [isOpen, setIsOpen] = useState(false);
 	const pathname = usePathname();
+	const { data: session, status } = useSession();
 
 	const navItems = [
 		{ title: 'Home', href: '/' },
@@ -69,10 +79,51 @@ export function Navbar() {
 						</NavigationMenu>
 					</div>
 
-					<div>
-						<Button asChild>
-							<Link href="/login">Login</Link>
-						</Button>
+					<div className="flex items-center gap-4">
+						{status === 'loading' && <Skeleton className="h-10 w-20" />}
+
+						{status === 'unauthenticated' && (
+							<Button asChild>
+								<Link href="/login">Login</Link>
+							</Button>
+						)}
+
+						{status === 'authenticated' && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										size="icon"
+										className="rounded-full w-12 h-12 p-1 cursor-pointer"
+									>
+										<User size={48} />
+										<span className="sr-only">Buka menu pengguna</span>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									align="end"
+									className="w-48"
+								>
+									<DropdownMenuItem
+										className="cursor-pointer"
+										asChild
+									>
+										<Link href="/setting">
+											<Settings className="mr-2 h-4 w-4" />
+											<span>Setting</span>
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="cursor-pointer"
+										onClick={() => signOut({ callbackUrl: '/' })}
+									>
+										<LogOut className="mr-2 h-4 w-4" />
+										<span>Logout</span>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
 					</div>
 
 					{/* Mobile Menu Button */}

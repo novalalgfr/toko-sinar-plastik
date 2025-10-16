@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { SideNavbar } from '@/components/layout/sideNavbar';
 import { Footer } from './footer';
+import { Toaster } from '../ui/sonner';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
 	const { data: session } = useSession();
@@ -14,7 +15,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
 	const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-	if (pathname === '/login') {
+	if (pathname === '/login' || pathname === '/signup') {
 		return <>{children}</>;
 	}
 
@@ -48,6 +49,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 		<>
 			<Navbar />
 			<main className="max-w-[1720px] mx-auto px-4 md:px-6 lg:px-8 my-6">{children}</main>
+			<Toaster />
 			<Footer />
 		</>
 	);

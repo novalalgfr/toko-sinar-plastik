@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Providers from '@/components/providers/SessionProvider';
 import ClientLayout from '@/components/layout/ClientLayout';
+import 'leaflet/dist/leaflet.css';
 
 export const metadata: Metadata = {
 	title: 'Toko Sinar Plastik',

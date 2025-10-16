@@ -9,7 +9,34 @@ type UserRow = RowDataPacket & {
 	name: string;
 	email: string;
 	password: string;
+	role: string; // Tambahan field role
 };
+
+// Extend tipe NextAuth untuk menambahkan role
+declare module 'next-auth' {
+	interface User {
+		id: string;
+		name: string;
+		email: string;
+		role: string;
+	}
+
+	interface Session {
+		user: {
+			id: string;
+			name: string;
+			email: string;
+			role: string;
+		};
+	}
+}
+
+declare module 'next-auth/jwt' {
+	interface JWT {
+		role?: string;
+		id?: string;
+	}
+}
 
 const authOptions: AuthOptions = {
 	providers: [
@@ -28,7 +55,6 @@ const authOptions: AuthOptions = {
 				try {
 					console.log('=== LOGIN DEBUG ===');
 					console.log('Email received:', credentials.email);
-					console.log('Password received:', credentials.password);
 
 					const conn = await mysql.createConnection({
 						host: process.env.DB_HOST,
@@ -37,8 +63,9 @@ const authOptions: AuthOptions = {
 						database: process.env.DB_NAME
 					});
 
+					// Tambahkan role ke dalam query
 					const [rows] = await conn.query<UserRow[]>(
-						'SELECT id, name, email, password FROM users WHERE email = ? LIMIT 1',
+						'SELECT id, name, email, password, role FROM users WHERE email = ? LIMIT 1',
 						[credentials.email]
 					);
 
@@ -53,26 +80,14 @@ const authOptions: AuthOptions = {
 					console.log('✅ User found:', {
 						id: user.id,
 						name: user.name,
-						email: user.email
+						email: user.email,
+						role: user.role
 					});
-					console.log('Hash from DB:', user.password);
-					console.log('Plain password to compare:', credentials.password);
 
-					// Gunakan bcrypt untuk membandingkan password
 					const isPasswordValid = await compare(credentials.password, user.password);
-
-					console.log('Password comparison result:', isPasswordValid);
 
 					if (!isPasswordValid) {
 						console.log('❌ Password mismatch!');
-						console.log('Expected hash:', user.password);
-						console.log('Input password:', credentials.password);
-
-						// Test dengan hash manual untuk debug
-						const { hash } = await import('bcryptjs');
-						const testHash = await hash(credentials.password, 10);
-						console.log('New hash generated for input:', testHash);
-
 						return null;
 					}
 
@@ -80,7 +95,8 @@ const authOptions: AuthOptions = {
 					return {
 						id: String(user.id),
 						name: user.name,
-						email: user.email
+						email: user.email,
+						role: user.role // Sertakan role
 					};
 				} catch (error) {
 					console.error('❌ Auth error:', error);
@@ -98,23 +114,25 @@ const authOptions: AuthOptions = {
 	callbacks: {
 		async jwt({ token, user }) {
 			if (user) {
-				(token as unknown as { user?: unknown }).user = user;
+				token.id = user.id;
+				token.role = user.role;
 			}
 			return token;
 		},
 		async session({ session, token }) {
-			const t = token as unknown as { user?: unknown };
-			if (t.user) {
-				session.user = t.user as typeof session.user;
+			if (session.user) {
+				session.user.id = token.id as string;
+				session.user.role = token.role as string;
 			}
 			return session;
 		},
 		async redirect({ url, baseUrl }) {
-			// Redirect ke admin setelah login sukses
-			if (url === baseUrl + '/login') {
-				return baseUrl + '/admin/example';
+			// Jika sudah authenticated, cek dari callback URL atau token
+			// Redirect berdasarkan role akan dilakukan di halaman callback
+			if (url.startsWith(baseUrl)) {
+				return url;
 			}
-			return url;
+			return baseUrl;
 		}
 	}
 };
