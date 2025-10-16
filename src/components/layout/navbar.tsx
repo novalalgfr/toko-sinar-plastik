@@ -91,14 +91,9 @@ export function Navbar() {
 						{status === 'authenticated' && (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline"
-										size="icon"
-										className="rounded-full w-12 h-12 p-1 cursor-pointer"
-									>
-										<User size={48} />
-										<span className="sr-only">Buka menu pengguna</span>
-									</Button>
+									<button className="rounded-full p-3 cursor-pointer border border-gray-300 hover:bg-gray-100">
+										<User size={20} />
+									</button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									align="end"
