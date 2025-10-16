@@ -1,5 +1,7 @@
 'use client';
 
+import { MapPin } from 'lucide-react';
+
 export default function KontakKamiPage() {
 	return (
 		<section className="space-y-10 md:space-y-8">
@@ -15,7 +17,7 @@ export default function KontakKamiPage() {
 
 					<div className="space-y-3">
 						<div className="flex items-center space-x-3">
-							<span className="text-xl">📍</span>
+							<MapPin />
 							<span>Lorem ipsum dolor sit amet</span>
 						</div>
 						<div className="flex items-center space-x-3">
