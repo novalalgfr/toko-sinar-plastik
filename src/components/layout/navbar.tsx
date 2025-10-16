@@ -33,9 +33,9 @@ export function Navbar() {
 					<div className="flex items-center space-x-4">
 						<Link
 							href="/"
-							className="font-black text-2xl"
+							className="font-black text-xl"
 						>
-							Ini Logo
+							Toko Sinar Plastik
 						</Link>
 					</div>
 

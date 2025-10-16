@@ -112,7 +112,7 @@ const authOptions: AuthOptions = {
 		async redirect({ url, baseUrl }) {
 			// Redirect ke admin setelah login sukses
 			if (url === baseUrl + '/login') {
-				return baseUrl + '/admin/website-profile';
+				return baseUrl + '/admin/example';
 			}
 			return url;
 		}

@@ -1,12 +1,19 @@
 'use client';
 
-import { House, LogOut, X } from 'lucide-react';
+import { Accessibility, House, List, LogOut, Settings, ShoppingBasket, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Dispatch, SetStateAction } from 'react';
 
-const navItems = [{ title: 'Example', href: '/admin/example', icon: House }];
+const navItems = [
+	{ title: 'Example', href: '/admin/example', icon: Accessibility },
+	{ title: 'Dashboard', href: '/admin/dashboard', icon: House },
+	{ title: 'Produk', href: '/admin/produk', icon: ShoppingBasket },
+	{ title: 'Kategori', href: '/admin/kategori', icon: List },
+	{ title: 'Pesanan', href: '/admin/pesanan', icon: ShoppingCart },
+	{ title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings }
+];
 
 interface SideNavbarProps {
 	isOpen: boolean;
@@ -43,9 +50,9 @@ export function SideNavbar({ isOpen, setIsOpen }: SideNavbarProps) {
 					<div className="flex justify-between items-center mb-10">
 						<Link
 							href="/"
-							className="font-black text-4xl"
+							className="font-black text-2xl"
 						>
-							Ini Logo Lagi
+							Toko Sinar Plastik
 						</Link>
 						<button
 							onClick={() => setIsOpen(false)}

@@ -31,7 +31,7 @@ export default function LoginPage() {
 				setError('Invalid email or password.');
 			} else {
 				await getSession();
-				router.push('/admin/website-profile');
+				router.push('/admin/example');
 			}
 		} catch (err) {
 			setError('An error occurred during login.');
@@ -49,9 +49,9 @@ export default function LoginPage() {
 			<div className="flex items-center justify-center bg-white p-8">
 				<div className="w-full max-w-sm space-y-8">
 					<div className="text-center">
-						<h1 className="font-black text-5xl mb-4">Ini Logo juga</h1>
-						<h2 className="text-3xl font-bold tracking-tight text-gray-900">Welcome Back</h2>
-						<p className="mt-2 text-gray-600">Please enter your credentials to access the admin panel.</p>
+						<h1 className="font-black text-2xl mb-6">Toko Sinar Plastik</h1>
+						<h2 className="text-3xl font-bold tracking-tight text-gray-900">Selamat Datang kembali</h2>
+						<p className="mt-2 text-gray-600">Silahkan masukkan email dan password anda.</p>
 					</div>
 					<form
 						className="space-y-6"
