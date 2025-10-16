@@ -29,7 +29,7 @@ export function Navbar() {
 	const { data: session, status } = useSession();
 
 	const navItems = [
-		{ title: 'Home', href: '/' },
+		{ title: 'Beranda', href: '/' },
 		{ title: 'Produk', href: '/produk' },
 		{ title: 'Cara Belanja', href: '/cara-belanja' },
 		{ title: 'Kontak Kami', href: '/kontak-kami' }

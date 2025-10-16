@@ -6,7 +6,7 @@ import { Instagram, Facebook, Mail, Phone, MapPin } from 'lucide-react';
 
 export function Footer() {
 	const navItems = [
-		{ title: 'Home', href: '/' },
+		{ title: 'Beranda', href: '/' },
 		{ title: 'Produk', href: '/produk' },
 		{ title: 'Cara Belanja', href: '/cara-belanja' },
 		{ title: 'Kontak Kami', href: '/kontak-kami' }
