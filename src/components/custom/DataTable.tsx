@@ -36,6 +36,8 @@ interface DataTableProps<TData, TValue> {
 	pageSize?: number;
 	className?: string;
 	emptyMessage?: string;
+	onAdd?: () => void;
+	addLabel?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -48,7 +50,9 @@ export function DataTable<TData, TValue>({
 	showPagination = true,
 	pageSize = 10,
 	className = '',
-	emptyMessage = 'No data found.'
+	emptyMessage = 'No data found.',
+	onAdd,
+	addLabel
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -79,7 +83,7 @@ export function DataTable<TData, TValue>({
 	return (
 		<div className={`w-full max-w-sm sm:max-w-none ${className}`}>
 			{/* Toolbar */}
-			{(showSearch || showColumnToggle) && (
+			{(showSearch || showColumnToggle || onAdd) && (
 				<div className="flex items-center justify-between py-4">
 					<div className="flex items-center space-x-2">
 						{/* Search Input */}
@@ -98,36 +102,48 @@ export function DataTable<TData, TValue>({
 						)}
 					</div>
 
-					{/* Column Toggle */}
-					{showColumnToggle && (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="outline"
-									className="ml-auto"
-								>
-									Columns <ChevronDown className="ml-2 h-4 w-4" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								{table
-									.getAllColumns()
-									.filter((column) => column.getCanHide())
-									.map((column) => {
-										return (
-											<DropdownMenuCheckboxItem
-												key={column.id}
-												className="capitalize"
-												checked={column.getIsVisible()}
-												onCheckedChange={(value) => column.toggleVisibility(!!value)}
-											>
-												{column.id}
-											</DropdownMenuCheckboxItem>
-										);
-									})}
-							</DropdownMenuContent>
-						</DropdownMenu>
-					)}
+					<div className="flex items-center gap-2">
+						{/* Tambah Produk */}
+						{onAdd && (
+							<Button
+								onClick={onAdd}
+								className="bg-black text-white hover:bg-gray-800"
+							>
+								{addLabel ?? '+ Tambah'}
+							</Button>
+						)}
+
+						{/* Column Toggle */}
+						{showColumnToggle && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										className="ml-auto"
+									>
+										Columns <ChevronDown className="ml-2 h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									{table
+										.getAllColumns()
+										.filter((column) => column.getCanHide())
+										.map((column) => {
+											return (
+												<DropdownMenuCheckboxItem
+													key={column.id}
+													className="capitalize"
+													checked={column.getIsVisible()}
+													onCheckedChange={(value) => column.toggleVisibility(!!value)}
+												>
+													{column.id}
+												</DropdownMenuCheckboxItem>
+											);
+										})}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
+					</div>
 				</div>
 			)}
 

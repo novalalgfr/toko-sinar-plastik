@@ -42,6 +42,8 @@ export default function ProdukPage() {
 				data={products}
 				searchKey="name"
 				searchPlaceholder="Cari produk..."
+				onAdd={() => console.log('Tambah Produk diklik')}
+				addLabel="+ Tambah Produk"
 			/>
 		</section>
 	);
