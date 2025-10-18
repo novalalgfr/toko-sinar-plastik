@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,8 @@ import {
 	Calendar,
 	ChevronRight,
 	Store,
-	Receipt
+	Receipt,
+	RefreshCw
 } from 'lucide-react';
 
 // Interface untuk Order
@@ -43,118 +44,102 @@ interface Order {
 		trackingNumber?: string;
 		etd?: string;
 	};
-	tracking?: {
-		date: string;
-		status: string;
-		description: string;
-	}[];
+}
+
+// Interface untuk API Response
+interface TrackingAPIResponse {
+	success: boolean;
+	data: {
+		summary: {
+			awb: string;
+			courier: string;
+			service: string;
+			status: string;
+			date: string;
+			desc: string;
+			amount: string;
+			weight: string;
+		};
+		detail: {
+			origin: string;
+			destination: string;
+			shipper: string;
+			receiver: string;
+		};
+		history: {
+			date: string;
+			desc: string;
+			location: string;
+		}[];
+	};
 }
 
 export default function OrderHistory() {
-	// Data contoh - nanti bisa diganti dengan fetch dari API
+	// Data dummy - 1 order dengan SiCepat
 	const [orders] = useState<Order[]>([
 		{
 			id: '1',
 			orderNumber: 'ORDER-1729123456',
-			date: '2025-10-15 14:30',
-			status: 'shipped',
-			fulfillmentType: 'delivery',
-			items: [{ name: 'Produk A', quantity: 1, price: 30000 }],
-			subtotal: 30000,
-			shippingCost: 15000,
-			total: 45000,
-			shippingAddress: {
-				name: 'Rumah',
-				address: 'Jl. Contoh No. 123, Purbalingga',
-				phone: '081234567890'
-			},
-			shipping: {
-				courier: 'JNE',
-				service: 'REG',
-				trackingNumber: 'JNE1234567890',
-				etd: '2-3 hari'
-			},
-			tracking: [
-				{
-					date: '2025-10-15 15:00',
-					status: 'Pesanan Dikonfirmasi',
-					description: 'Pembayaran telah diterima dan pesanan sedang diproses'
-				},
-				{
-					date: '2025-10-15 16:30',
-					status: 'Dikemas',
-					description: 'Pesanan sedang dikemas oleh penjual'
-				},
-				{
-					date: '2025-10-16 09:00',
-					status: 'Dikirim',
-					description: 'Paket telah diserahkan ke kurir JNE'
-				},
-				{
-					date: '2025-10-17 10:30',
-					status: 'Dalam Perjalanan',
-					description: 'Paket sedang dalam perjalanan ke alamat tujuan'
-				}
-			]
-		},
-		{
-			id: '2',
-			orderNumber: 'ORDER-1729098765',
-			date: '2025-10-10 10:15',
+			date: '2025-09-30 18:00',
 			status: 'delivered',
 			fulfillmentType: 'delivery',
-			items: [{ name: 'Produk B', quantity: 2, price: 25000 }],
-			subtotal: 50000,
-			shippingCost: 12000,
-			total: 62000,
+			items: [
+				{ name: 'Sepatu Sneakers Nike', quantity: 1, price: 850000 },
+				{ name: 'Kaos Kaki Sport', quantity: 2, price: 45000 }
+			],
+			subtotal: 940000,
+			shippingCost: 15000,
+			total: 955000,
 			shippingAddress: {
-				name: 'Rumah',
-				address: 'Jl. Contoh No. 123, Purbalingga',
+				name: 'Rumah Utama',
+				address: 'Jl. Mampang Prapatan No. 45, Kota Administrasi Jakarta Selatan',
 				phone: '081234567890'
 			},
 			shipping: {
-				courier: 'SiCepat',
-				service: 'REGULAR',
-				trackingNumber: 'SICEPAT987654321',
+				courier: 'sicepat',
+				service: 'REG',
+				trackingNumber: '002929295958',
 				etd: '2-3 hari'
-			},
-			tracking: [
-				{
-					date: '2025-10-10 11:00',
-					status: 'Pesanan Dikonfirmasi',
-					description: 'Pembayaran telah diterima'
-				},
-				{
-					date: '2025-10-10 14:00',
-					status: 'Dikemas',
-					description: 'Pesanan dikemas'
-				},
-				{
-					date: '2025-10-11 08:00',
-					status: 'Dikirim',
-					description: 'Diserahkan ke kurir'
-				},
-				{
-					date: '2025-10-13 15:30',
-					status: 'Terkirim',
-					description: 'Paket telah diterima oleh penerima'
-				}
-			]
-		},
-		{
-			id: '3',
-			orderNumber: 'ORDER-1729001122',
-			date: '2025-10-12 09:00',
-			status: 'paid',
-			fulfillmentType: 'store',
-			items: [{ name: 'Produk C', quantity: 1, price: 45000 }],
-			subtotal: 45000,
-			shippingCost: 0,
-			total: 45000
+			}
 		}
 	]);
 
 	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+	const [trackingData, setTrackingData] = useState<TrackingAPIResponse | null>(null);
+	const [isLoadingTracking, setIsLoadingTracking] = useState(false);
+	const [trackingError, setTrackingError] = useState<string | null>(null);
+
+	// Fetch tracking data dari API route
+	const fetchTrackingData = async (courier: string, awb: string) => {
+		setIsLoadingTracking(true);
+		setTrackingError(null);
+
+		try {
+			const response = await fetch(`/api/tracking?courier=${courier}&awb=${awb}`);
+
+			const result = await response.json();
+
+			if (!response.ok || !result.success) {
+				throw new Error(result.error || 'Gagal mengambil data tracking');
+			}
+
+			setTrackingData(result);
+		} catch (error) {
+			setTrackingError(error instanceof Error ? error.message : 'Terjadi kesalahan');
+			console.error('Error fetching tracking:', error);
+		} finally {
+			setIsLoadingTracking(false);
+		}
+	};
+
+	// Auto fetch ketika order dengan shipping dipilih
+	useEffect(() => {
+		if (selectedOrder?.shipping?.trackingNumber && selectedOrder?.shipping?.courier) {
+			fetchTrackingData(selectedOrder.shipping.courier.toLowerCase(), selectedOrder.shipping.trackingNumber);
+		} else {
+			setTrackingData(null);
+		}
+	}, [selectedOrder]);
 
 	// Status badge styling
 	const getStatusBadge = (status: Order['status']) => {
@@ -169,9 +154,20 @@ export default function OrderHistory() {
 		return styles[status];
 	};
 
+	// Map API status ke status badge
+	const getDeliveryStatusBadge = (status: string) => {
+		const statusMap: { [key: string]: { color: string; label: string } } = {
+			DELIVERED: { color: 'bg-green-100 text-green-800', label: 'Terkirim' },
+			ON_PROCESS: { color: 'bg-blue-100 text-blue-800', label: 'Dalam Proses' },
+			PENDING: { color: 'bg-yellow-100 text-yellow-800', label: 'Menunggu' },
+			CANCELLED: { color: 'bg-red-100 text-red-800', label: 'Dibatalkan' }
+		};
+		return statusMap[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+	};
+
 	return (
 		<div className="min-h-screen bg-gray-50 py-8">
-			<div className="container mx-auto">
+			<div className="container mx-auto px-4">
 				<h1 className="text-3xl font-bold mb-6">Riwayat Pesanan</h1>
 
 				{selectedOrder ? (
@@ -251,7 +247,8 @@ export default function OrderHistory() {
 											<div className="flex justify-between">
 												<span className="text-sm text-gray-600">Kurir</span>
 												<span className="font-medium">
-													{selectedOrder.shipping.courier} - {selectedOrder.shipping.service}
+													{selectedOrder.shipping.courier.toUpperCase()} -{' '}
+													{selectedOrder.shipping.service}
 												</span>
 											</div>
 											{selectedOrder.shipping.trackingNumber && (
@@ -268,23 +265,6 @@ export default function OrderHistory() {
 													<span>{selectedOrder.shipping.etd}</span>
 												</div>
 											)}
-										</div>
-									</div>
-								)}
-
-								{/* Store Pickup Info */}
-								{selectedOrder.fulfillmentType === 'store' && (
-									<div>
-										<h3 className="font-semibold mb-3 flex items-center gap-2">
-											<Store size={18} />
-											Ambil di Toko
-										</h3>
-										<div className="bg-green-50 p-4 rounded-lg">
-											<p className="text-sm text-green-800">Silakan ambil pesanan Anda di:</p>
-											<p className="font-medium mt-2">Jl. Merdeka No. 123, Jakarta Pusat</p>
-											<p className="text-sm text-gray-600 mt-1">
-												Buka: Senin - Sabtu, 09:00 - 17:00
-											</p>
 										</div>
 									</div>
 								)}
@@ -313,47 +293,166 @@ export default function OrderHistory() {
 							</CardContent>
 						</Card>
 
-						{/* Tracking Timeline */}
-						{selectedOrder.tracking && selectedOrder.tracking.length > 0 && (
+						{/* Tracking Timeline dari API */}
+						{selectedOrder.shipping?.trackingNumber && (
 							<Card>
 								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<Package size={20} />
-										Lacak Paket
-									</CardTitle>
+									<div className="flex justify-between items-center">
+										<CardTitle className="flex items-center gap-2">
+											<Package size={20} />
+											Lacak Paket
+										</CardTitle>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => {
+												if (selectedOrder.shipping) {
+													fetchTrackingData(
+														selectedOrder.shipping.courier.toLowerCase(),
+														selectedOrder.shipping.trackingNumber!
+													);
+												}
+											}}
+											disabled={isLoadingTracking}
+										>
+											<RefreshCw
+												size={16}
+												className={isLoadingTracking ? 'animate-spin' : ''}
+											/>
+											<span className="ml-2">Refresh</span>
+										</Button>
+									</div>
 								</CardHeader>
 								<CardContent>
-									<div className="space-y-6">
-										{selectedOrder.tracking.map((track, idx) => (
-											<div
-												key={idx}
-												className="flex gap-4"
+									{isLoadingTracking ? (
+										<div className="flex items-center justify-center py-8">
+											<RefreshCw
+												size={24}
+												className="animate-spin text-blue-500"
+											/>
+											<span className="ml-3 text-gray-600">Memuat data tracking...</span>
+										</div>
+									) : trackingError ? (
+										<div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+											<p className="text-red-600">{trackingError}</p>
+											<Button
+												variant="outline"
+												size="sm"
+												className="mt-3"
+												onClick={() => {
+													if (selectedOrder.shipping) {
+														fetchTrackingData(
+															selectedOrder.shipping.courier.toLowerCase(),
+															selectedOrder.shipping.trackingNumber!
+														);
+													}
+												}}
 											>
-												{/* Timeline */}
-												<div className="flex flex-col items-center">
-													<div
-														className={`rounded-full p-2 ${
-															idx === 0
-																? 'bg-blue-500 text-white'
-																: 'bg-gray-200 text-gray-400'
-														}`}
-													>
-														{idx === 0 ? <CheckCircle size={20} /> : <Clock size={20} />}
+												Coba Lagi
+											</Button>
+										</div>
+									) : trackingData ? (
+										<div className="space-y-6">
+											{/* Summary Info */}
+											<div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
+												<div className="flex justify-between items-start mb-3">
+													<div>
+														<p className="text-sm text-gray-600">Status Pengiriman</p>
+														<p className="font-bold text-lg mt-1">
+															{trackingData.data.summary.courier}
+														</p>
 													</div>
-													{idx < selectedOrder.tracking!.length - 1 && (
-														<div className="w-0.5 h-16 bg-gray-200 my-2" />
-													)}
+													<Badge
+														className={
+															getDeliveryStatusBadge(trackingData.data.summary.status)
+																.color
+														}
+													>
+														{getDeliveryStatusBadge(trackingData.data.summary.status).label}
+													</Badge>
 												</div>
 
-												{/* Content */}
-												<div className="flex-1 pb-8">
-													<p className="font-semibold text-gray-900">{track.status}</p>
-													<p className="text-sm text-gray-500 mt-1">{track.description}</p>
-													<p className="text-xs text-gray-400 mt-2">{track.date}</p>
-												</div>
+												{trackingData.data.detail && (
+													<div className="grid grid-cols-2 gap-3 text-sm mt-4 pt-3 border-t border-blue-200">
+														<div>
+															<p className="text-gray-600">Pengirim</p>
+															<p className="font-medium">
+																{trackingData.data.detail.shipper}
+															</p>
+														</div>
+														<div>
+															<p className="text-gray-600">Penerima</p>
+															<p className="font-medium">
+																{trackingData.data.detail.receiver}
+															</p>
+														</div>
+														<div>
+															<p className="text-gray-600">Asal</p>
+															<p className="font-medium">
+																{trackingData.data.detail.origin}
+															</p>
+														</div>
+														<div>
+															<p className="text-gray-600">Tujuan</p>
+															<p className="font-medium">
+																{trackingData.data.detail.destination}
+															</p>
+														</div>
+													</div>
+												)}
 											</div>
-										))}
-									</div>
+
+											{/* History Timeline */}
+											<div className="space-y-4">
+												<h4 className="font-semibold text-gray-700">Riwayat Pengiriman</h4>
+												{trackingData.data.history.map((track, idx) => (
+													<div
+														key={idx}
+														className="flex gap-4"
+													>
+														{/* Timeline */}
+														<div className="flex flex-col items-center">
+															<div
+																className={`rounded-full p-2 ${
+																	idx === 0
+																		? 'bg-blue-500 text-white'
+																		: 'bg-gray-200 text-gray-400'
+																}`}
+															>
+																{idx === 0 ? (
+																	<CheckCircle size={20} />
+																) : (
+																	<Clock size={20} />
+																)}
+															</div>
+															{idx < trackingData.data.history.length - 1 && (
+																<div className="w-0.5 h-16 bg-gray-200 my-2" />
+															)}
+														</div>
+
+														{/* Content */}
+														<div className="flex-1 pb-8">
+															<p className="font-semibold text-gray-900">{track.desc}</p>
+															{track.location && (
+																<p className="text-sm text-gray-600 mt-1">
+																	{track.location}
+																</p>
+															)}
+															<p className="text-xs text-gray-400 mt-2">{track.date}</p>
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									) : (
+										<div className="text-center py-8 text-gray-500">
+											<Package
+												size={48}
+												className="mx-auto mb-3 text-gray-300"
+											/>
+											<p>Data tracking tidak tersedia</p>
+										</div>
+									)}
 								</CardContent>
 							</Card>
 						)}
@@ -424,13 +523,22 @@ export default function OrderHistory() {
 											</Button>
 										</div>
 
-										{order.fulfillmentType === 'store' && (
-											<div className="mt-4 p-3 bg-green-50 rounded-lg flex items-center gap-2">
-												<Store
-													size={16}
-													className="text-green-600"
-												/>
-												<span className="text-sm text-green-700">Ambil di Toko</span>
+										{order.shipping && (
+											<div className="mt-4 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
+												<div className="flex items-center gap-2">
+													<Truck
+														size={16}
+														className="text-blue-600"
+													/>
+													<div>
+														<span className="text-sm font-medium text-blue-700">
+															{order.shipping.courier.toUpperCase()}
+														</span>
+														<p className="text-xs text-blue-600">
+															Resi: {order.shipping.trackingNumber}
+														</p>
+													</div>
+												</div>
 											</div>
 										)}
 									</CardContent>
