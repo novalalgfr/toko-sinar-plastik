@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/custom/ProductCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowUpDown } from 'lucide-react';
+import { toast } from 'sonner'; 
 
 export default function ProductPage() {
 	const [search, setSearch] = React.useState('');
@@ -21,11 +22,11 @@ export default function ProductPage() {
 		.sort((a, b) => (sortOrder === 'asc' ? a.price - b.price : b.price - a.price));
 
 	const handleAddToCart = (product: { name: string }) => {
-		alert(`${product.name} ditambahkan ke keranjang!`);
+		toast.success(`${product.name} berhasil ditambahkan ke keranjang!`);
 	};
 
 	const toggleSortOrder = () => {
-		setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+		setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
 	};
 
 	return (
