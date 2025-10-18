@@ -11,7 +11,7 @@ import {
 	NavigationMenuList
 } from '@/components/ui/navigation-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { LogOut, Menu, Settings, ShoppingCart, User } from 'lucide-react';
+import { History, LogOut, Menu, Settings, ShoppingCart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOut, useSession } from 'next-auth/react';
 import { Skeleton } from '../ui/skeleton';
@@ -121,8 +121,17 @@ export function Navbar() {
 									</DropdownMenuTrigger>
 									<DropdownMenuContent
 										align="end"
-										className="w-48"
+										className="w-48 space-y-1"
 									>
+										<DropdownMenuItem
+											className="cursor-pointer"
+											asChild
+										>
+											<Link href="/riwayat-pesanan">
+												<History className="mr-2 h-4 w-4" />
+												<span>Riwayat Pesanan</span>
+											</Link>
+										</DropdownMenuItem>
 										<DropdownMenuItem
 											className="cursor-pointer"
 											asChild

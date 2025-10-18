@@ -153,7 +153,6 @@ export default function CheckoutPage() {
 				}));
 
 				setShippingOptions(formattedOptions);
-				// ⭐ TAMBAHKAN BARIS INI - Auto-advance ke step 3
 				setCurrentStep(3);
 			} else {
 				throw new Error('No tariffs available');

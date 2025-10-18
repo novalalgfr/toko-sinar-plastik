@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Home() {
 	return (
-		<section className="space-y-12 md:space-y-16 max-w-[1320px] mx-auto px-6 md:px-8">
+		<section className="space-y-12 md:space-y-16 container mx-auto">
 			{/* Header */}
 			<div className="text-center">
 				<h1 className="text-[40px] md:text-2xl font-semibold">
@@ -14,10 +14,10 @@ export default function Home() {
 
 			{/* Image + Stats Section */}
 			<div className="grid md:grid-cols-3 gap-4">
-				<div className="md:col-span-2 h-[400px] bg-gray-200 rounded-xl" />
+				<div className="md:col-span-2 h-[600px] bg-gray-200 rounded-xl" />
 				<div className="flex flex-col gap-4">
-					<div className="h-[192px] bg-gray-200 rounded-xl" />
-					<div className="h-[192px] bg-gray-200 rounded-xl" />
+					<div className="h-[292px] bg-gray-200 rounded-xl" />
+					<div className="h-[292px] bg-gray-200 rounded-xl" />
 				</div>
 			</div>
 
@@ -46,11 +46,11 @@ export default function Home() {
 			{/* Kategori Section */}
 			<div>
 				<h2 className="text-lg md:text-xl font-semibold mb-4">Belanja Berdasarkan Kategori</h2>
-				<div className="grid grid-cols-2 md:grid-cols-6 gap-2 justify-items-center">
+				<div className="grid grid-cols-2 md:grid-cols-6 gap-6">
 					{[...Array(6)].map((_, i) => (
 						<div
 							key={i}
-							className="w-[200px] h-[300px] bg-gray-200 rounded-xl"
+							className="w-full h-[300px] bg-gray-200 rounded-xl"
 						/>
 					))}
 				</div>
