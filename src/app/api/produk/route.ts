@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import fs from 'fs';
 import path from 'path';
-import { db } from '@/lib/db'
+import { db } from '@/lib/db';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 // Folder upload gambar
@@ -30,6 +31,31 @@ interface CountResult extends RowDataPacket {
 	total: number;
 }
 
+// Fungsi untuk cek auth ADMIN (untuk POST, PUT, DELETE)
+async function checkAdminAuth(request: NextRequest) {
+	const token = await getToken({
+		req: request,
+		secret: process.env.NEXTAUTH_SECRET
+	});
+
+	if (!token) {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Unauthorized. Please login first.' }, { status: 401 })
+		};
+	}
+
+	// Cek apakah role adalah admin
+	if (token.role !== 'admin') {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Forbidden. Admin access required.' }, { status: 403 })
+		};
+	}
+
+	return { authenticated: true, token };
+}
+
 // Fungsi untuk menambahkan URL gambar agar bisa diakses di front-end
 function addImageUrl(data: Produk[], baseUrl: string) {
 	return data.map((item) => ({
@@ -39,7 +65,8 @@ function addImageUrl(data: Produk[], baseUrl: string) {
 }
 
 /* ==========================================================
-   GET — Menampilkan produk dengan paginatio    n dan pencarian
+   GET — Menampilkan produk dengan pagination dan pencarian
+   (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
@@ -111,8 +138,15 @@ export async function GET(request: NextRequest) {
 
 /* ==========================================================
    POST — Menambahkan produk baru + upload gambar
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function POST(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		console.log('Creating new produk...');
 
@@ -160,8 +194,15 @@ export async function POST(request: NextRequest) {
 
 /* ==========================================================
    PUT — Update produk + ganti gambar jika ada
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function PUT(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		console.log('Updating produk...');
 
@@ -176,10 +217,7 @@ export async function PUT(request: NextRequest) {
 		const id_kategori = formData.get('id_kategori') ? parseInt(formData.get('id_kategori') as string) : null;
 		const gambarFile = formData.get('gambar') as File | null;
 
-		const [existingRows] = await db.execute<Produk[]>(
-			'SELECT gambar FROM Produk WHERE id_produk = ?',
-			[id_produk]
-		);
+		const [existingRows] = await db.execute<Produk[]>('SELECT gambar FROM Produk WHERE id_produk = ?', [id_produk]);
 
 		let gambar = existingRows[0]?.gambar;
 
@@ -216,8 +254,15 @@ export async function PUT(request: NextRequest) {
 
 /* ==========================================================
    DELETE — Hapus produk + hapus gambar fisik
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function DELETE(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		const { searchParams } = new URL(request.url);
 		const id_produk = searchParams.get('id_produk');
@@ -226,10 +271,7 @@ export async function DELETE(request: NextRequest) {
 			return NextResponse.json({ message: 'ID produk wajib diisi' }, { status: 400 });
 		}
 
-		const [existingRows] = await db.execute<Produk[]>(
-			'SELECT gambar FROM Produk WHERE id_produk = ?',
-			[id_produk]
-		);
+		const [existingRows] = await db.execute<Produk[]>('SELECT gambar FROM Produk WHERE id_produk = ?', [id_produk]);
 
 		const gambar = existingRows[0]?.gambar;
 

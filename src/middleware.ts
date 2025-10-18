@@ -7,7 +7,6 @@ export default withAuth(
 		const { pathname } = req.nextUrl;
 		const token = req.nextauth.token;
 
-		// Jika sudah login dan mengakses /login, redirect berdasarkan role
 		if (pathname === '/login' && token) {
 			if (token.role === 'admin') {
 				return NextResponse.redirect(new URL('/admin/example', req.url));
@@ -16,9 +15,38 @@ export default withAuth(
 			}
 		}
 
-		// Jika user mencoba akses /admin tapi bukan admin
 		if (pathname.startsWith('/admin') && token?.role !== 'admin') {
 			return NextResponse.redirect(new URL('/', req.url));
+		}
+
+		if (pathname.startsWith('/api/produk')) {
+			const method = req.method;
+
+			if (method === 'GET') {
+				return NextResponse.next();
+			}
+
+			if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+				if (!token) {
+					return NextResponse.json(
+						{
+							success: false,
+							message: 'Unauthorized. Please login first.'
+						},
+						{ status: 401 }
+					);
+				}
+
+				if (token.role !== 'admin') {
+					return NextResponse.json(
+						{
+							success: false,
+							message: 'Forbidden. Admin access required.'
+						},
+						{ status: 403 }
+					);
+				}
+			}
 		}
 
 		return NextResponse.next();
@@ -28,12 +56,14 @@ export default withAuth(
 			authorized: ({ token, req }) => {
 				const { pathname } = req.nextUrl;
 
-				// Jika akses /admin, harus ada token
 				if (pathname.startsWith('/admin')) {
 					return !!token;
 				}
 
-				// Route lain bisa diakses
+				if (pathname.startsWith('/api/produk')) {
+					return true;
+				}
+
 				return true;
 			}
 		}
@@ -41,5 +71,5 @@ export default withAuth(
 );
 
 export const config = {
-	matcher: ['/admin/:path*', '/login', '/']
+	matcher: ['/admin/:path*', '/login', '/', '/api/produk/:path*']
 };
