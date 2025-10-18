@@ -1,7 +1,6 @@
 'use client';
 
-import { MapPin, Phone, Mail, Send, Clock, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 export default function KontakKamiPage() {
 	return (
