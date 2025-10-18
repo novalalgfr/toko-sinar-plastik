@@ -11,7 +11,7 @@ import {
 	NavigationMenuList
 } from '@/components/ui/navigation-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { LogOut, Menu, Settings, User } from 'lucide-react';
+import { LogOut, Menu, Settings, ShoppingCart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOut, useSession } from 'next-auth/react';
 import { Skeleton } from '../ui/skeleton';
@@ -37,7 +37,7 @@ export function Navbar() {
 
 	return (
 		<nav className="w-full">
-			<div className="max-w-[1720px] mx-auto px-4 md:px-6 lg:px-8 my-6">
+			<div className="container mx-auto px-4 md:px-6 lg:px-8 my-6">
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo */}
 					<div className="flex items-center space-x-4">
@@ -89,35 +89,60 @@ export function Navbar() {
 						)}
 
 						{status === 'authenticated' && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<button className="rounded-full p-3 cursor-pointer border border-gray-300 hover:bg-gray-100">
-										<User size={20} />
+							<>
+								<Link href="/pembayaran">
+									<button
+										className={`rounded-full p-3 cursor-pointer border hover:bg-gray-100 ${
+											pathname === '/pembayaran'
+												? 'bg-slate-900 border-0 hover:bg-slate-800'
+												: 'border-gray-300'
+										}`}
+									>
+										<ShoppingCart
+											size={20}
+											className={pathname === '/pembayaran' ? 'text-white' : ''}
+										/>
 									</button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent
-									align="end"
-									className="w-48"
-								>
-									<DropdownMenuItem
-										className="cursor-pointer"
-										asChild
+								</Link>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<button
+											className={`rounded-full p-3 cursor-pointer border hover:bg-gray-100 ${
+												pathname === '/setting'
+													? 'bg-slate-900 border-0 hover:bg-slate-800'
+													: 'border-gray-300'
+											}`}
+										>
+											<User
+												size={20}
+												className={pathname === '/setting' ? 'text-white' : ''}
+											/>
+										</button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent
+										align="end"
+										className="w-48"
 									>
-										<Link href="/setting">
-											<Settings className="mr-2 h-4 w-4" />
-											<span>Setting</span>
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="cursor-pointer"
-										onClick={() => signOut({ callbackUrl: '/' })}
-									>
-										<LogOut className="mr-2 h-4 w-4" />
-										<span>Logout</span>
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
+										<DropdownMenuItem
+											className="cursor-pointer"
+											asChild
+										>
+											<Link href="/setting">
+												<Settings className="mr-2 h-4 w-4" />
+												<span>Setting</span>
+											</Link>
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											className="cursor-pointer"
+											onClick={() => signOut({ callbackUrl: '/' })}
+										>
+											<LogOut className="mr-2 h-4 w-4" />
+											<span>Logout</span>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</>
 						)}
 					</div>
 
