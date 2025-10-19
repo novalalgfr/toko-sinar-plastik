@@ -7,6 +7,7 @@ export default withAuth(
 		const { pathname } = req.nextUrl;
 		const token = req.nextauth.token;
 
+		// Redirect jika sudah login dan akses /login
 		if (pathname === '/login' && token) {
 			if (token.role === 'admin') {
 				return NextResponse.redirect(new URL('/admin/example', req.url));
@@ -15,37 +16,54 @@ export default withAuth(
 			}
 		}
 
+		// Proteksi halaman admin
 		if (pathname.startsWith('/admin') && token?.role !== 'admin') {
 			return NextResponse.redirect(new URL('/', req.url));
 		}
 
-		if (pathname.startsWith('/api/produk')) {
-			const method = req.method;
+		// Fungsi helper untuk cek autentikasi API
+		const checkApiAuth = (apiPath: string) => {
+			if (pathname.startsWith(apiPath)) {
+				const method = req.method;
 
-			if (method === 'GET') {
-				return NextResponse.next();
+				// GET adalah public, bisa diakses siapa saja
+				if (method === 'GET') {
+					return NextResponse.next();
+				}
+
+				// POST, PUT, DELETE harus admin
+				if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+					if (!token) {
+						return NextResponse.json(
+							{
+								success: false,
+								message: 'Unauthorized. Please login first.'
+							},
+							{ status: 401 }
+						);
+					}
+
+					if (token.role !== 'admin') {
+						return NextResponse.json(
+							{
+								success: false,
+								message: 'Forbidden. Admin access required.'
+							},
+							{ status: 403 }
+						);
+					}
+				}
 			}
+			return null;
+		};
 
-			if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-				if (!token) {
-					return NextResponse.json(
-						{
-							success: false,
-							message: 'Unauthorized. Please login first.'
-						},
-						{ status: 401 }
-					);
-				}
+		// Cek autentikasi untuk semua API
+		const apiPaths = ['/api/produk', '/api/beranda', '/api/kontak', '/api/kategori', '/api/pemesanan'];
 
-				if (token.role !== 'admin') {
-					return NextResponse.json(
-						{
-							success: false,
-							message: 'Forbidden. Admin access required.'
-						},
-						{ status: 403 }
-					);
-				}
+		for (const apiPath of apiPaths) {
+			const authResponse = checkApiAuth(apiPath);
+			if (authResponse) {
+				return authResponse;
 			}
 		}
 
@@ -56,11 +74,20 @@ export default withAuth(
 			authorized: ({ token, req }) => {
 				const { pathname } = req.nextUrl;
 
+				// Halaman admin harus login
 				if (pathname.startsWith('/admin')) {
 					return !!token;
 				}
 
-				if (pathname.startsWith('/api/produk')) {
+				// Semua API endpoint diizinkan masuk ke middleware
+				// Autentikasi dilakukan di dalam middleware function
+				if (
+					pathname.startsWith('/api/produk') ||
+					pathname.startsWith('/api/beranda') ||
+					pathname.startsWith('/api/kontak') ||
+					pathname.startsWith('/api/kategori') ||
+					pathname.startsWith('/api/pemesanan')
+				) {
 					return true;
 				}
 
@@ -71,5 +98,14 @@ export default withAuth(
 );
 
 export const config = {
-	matcher: ['/admin/:path*', '/login', '/', '/api/produk/:path*']
+	matcher: [
+		'/admin/:path*',
+		'/login',
+		'/',
+		'/api/produk/:path*',
+		'/api/beranda/:path*',
+		'/api/kontak/:path*',
+		'/api/kategori/:path*',
+		'/api/pemesanan/:path*'
+	]
 };

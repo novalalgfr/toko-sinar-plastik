@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { db } from '@/lib/db';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
@@ -17,8 +18,34 @@ interface CountResult extends RowDataPacket {
 	total: number;
 }
 
+// Fungsi untuk cek auth ADMIN (untuk POST, PUT, DELETE)
+async function checkAdminAuth(request: NextRequest) {
+	const token = await getToken({
+		req: request,
+		secret: process.env.NEXTAUTH_SECRET
+	});
+
+	if (!token) {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Unauthorized. Please login first.' }, { status: 401 })
+		};
+	}
+
+	// Cek apakah role adalah admin
+	if (token.role !== 'admin') {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Forbidden. Admin access required.' }, { status: 403 })
+		};
+	}
+
+	return { authenticated: true, token };
+}
+
 /* ==========================================================
    GET — Menampilkan data kontak dengan pagination & search
+   (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
@@ -88,8 +115,15 @@ export async function GET(request: NextRequest) {
 
 /* ==========================================================
    POST — Menambahkan kontak baru
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function POST(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		console.log('Creating new kontak...');
 
@@ -109,6 +143,8 @@ export async function POST(request: NextRequest) {
 			[deskripsi, lokasi, nomor_telpon, email]
 		);
 
+		console.log('Kontak inserted with ID:', result.insertId);
+
 		return NextResponse.json(
 			{
 				message: 'Kontak berhasil ditambahkan',
@@ -124,8 +160,15 @@ export async function POST(request: NextRequest) {
 
 /* ==========================================================
    PUT — Update kontak
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function PUT(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		console.log('Updating kontak...');
 
@@ -141,10 +184,20 @@ export async function PUT(request: NextRequest) {
 			return NextResponse.json({ message: 'ID, lokasi, dan nomor telepon wajib diisi' }, { status: 400 });
 		}
 
+		const [existingRows] = await db.execute<Kontak[]>('SELECT id_kontak FROM Kontak WHERE id_kontak = ?', [
+			id_kontak
+		]);
+
+		if (existingRows.length === 0) {
+			return NextResponse.json({ message: 'Data kontak tidak ditemukan' }, { status: 404 });
+		}
+
 		await db.execute<ResultSetHeader>(
 			'UPDATE Kontak SET deskripsi=?, lokasi=?, nomor_telpon=?, email=? WHERE id_kontak=?',
 			[deskripsi, lokasi, nomor_telpon, email, id_kontak]
 		);
+
+		console.log('Kontak updated successfully');
 
 		return NextResponse.json({ message: 'Kontak berhasil diperbarui' }, { status: 200 });
 	} catch (error) {
@@ -155,8 +208,15 @@ export async function PUT(request: NextRequest) {
 
 /* ==========================================================
    DELETE — Hapus kontak
+   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function DELETE(request: NextRequest) {
+	// Auth check untuk ADMIN
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) {
+		return authCheck.response;
+	}
+
 	try {
 		const { searchParams } = new URL(request.url);
 		const id_kontak = searchParams.get('id_kontak');
@@ -165,7 +225,17 @@ export async function DELETE(request: NextRequest) {
 			return NextResponse.json({ message: 'ID kontak wajib diisi' }, { status: 400 });
 		}
 
+		const [existingRows] = await db.execute<Kontak[]>('SELECT id_kontak FROM Kontak WHERE id_kontak = ?', [
+			id_kontak
+		]);
+
+		if (existingRows.length === 0) {
+			return NextResponse.json({ message: 'Data kontak tidak ditemukan' }, { status: 404 });
+		}
+
 		await db.execute<ResultSetHeader>('DELETE FROM Kontak WHERE id_kontak = ?', [id_kontak]);
+
+		console.log('Kontak deleted successfully');
 
 		return NextResponse.json({ message: 'Kontak berhasil dihapus' }, { status: 200 });
 	} catch (error) {

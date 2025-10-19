@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { db } from '@/lib/db';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
@@ -15,6 +16,8 @@ interface Pemesanan extends RowDataPacket {
 	alamat: string;
 	tanggal_pesanan: Date;
 	status_pemesanan: 'Pending' | 'Diproses' | 'Dikirim' | 'Selesai' | 'Dibatalkan';
+	kurir: 'JNE' | 'J&T' | 'SiCepat' | 'POS' | 'TIKI' | 'Lainnya';
+	no_resi: string | null;
 	created_at: Date;
 	updated_at: Date;
 	nama_produk?: string;
@@ -25,7 +28,33 @@ interface CountResult extends RowDataPacket {
 }
 
 /* ==========================================================
-   GET — Ambil data pemesanan (pagination + pencarian)
+   AUTH FUNCTION (ADMIN ONLY)
+   ========================================================== */
+async function checkAdminAuth(request: NextRequest) {
+	const token = await getToken({
+		req: request,
+		secret: process.env.NEXTAUTH_SECRET
+	});
+
+	if (!token) {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Unauthorized. Please login first.' }, { status: 401 })
+		};
+	}
+
+	if (token.role !== 'admin') {
+		return {
+			authenticated: false,
+			response: NextResponse.json({ message: 'Forbidden. Admin access required.' }, { status: 403 })
+		};
+	}
+
+	return { authenticated: true, token };
+}
+
+/* ==========================================================
+   GET — Ambil data pemesanan (Public)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
@@ -95,9 +124,13 @@ export async function GET(request: NextRequest) {
 }
 
 /* ==========================================================
-   POST — Tambah data pemesanan baru
+   POST — Tambah pemesanan baru (Admin Only)
    ========================================================== */
 export async function POST(request: NextRequest) {
+	// Auth check
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) return authCheck.response;
+
 	try {
 		console.log('Creating new pemesanan...');
 
@@ -109,21 +142,18 @@ export async function POST(request: NextRequest) {
 		const email = formData.get('email') as string;
 		const alamat = formData.get('alamat') as string;
 		const status_pemesanan = (formData.get('status_pemesanan') as string) || 'Pending';
+		const kurir = (formData.get('kurir') as string) || 'Lainnya';
+		const no_resi = (formData.get('no_resi') as string) || null;
 
 		const [result] = await db.execute<ResultSetHeader>(
 			`INSERT INTO Pemesanan 
-			 (nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan) 
-			 VALUES (?, ?, ?, ?, ?, ?)`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan]
+			 (nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi) 
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi]
 		);
 
-		console.log('Pemesanan created with ID:', result.insertId);
-
 		return NextResponse.json(
-			{
-				message: 'Pemesanan berhasil ditambahkan',
-				id: result.insertId
-			},
+			{ message: 'Pemesanan berhasil ditambahkan', id: result.insertId },
 			{ status: 201 }
 		);
 	} catch (error) {
@@ -133,9 +163,12 @@ export async function POST(request: NextRequest) {
 }
 
 /* ==========================================================
-   PUT — Update data pemesanan
+   PUT — Update pemesanan (Admin Only)
    ========================================================== */
 export async function PUT(request: NextRequest) {
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) return authCheck.response;
+
 	try {
 		console.log('Updating pemesanan...');
 
@@ -148,15 +181,15 @@ export async function PUT(request: NextRequest) {
 		const email = formData.get('email') as string;
 		const alamat = formData.get('alamat') as string;
 		const status_pemesanan = (formData.get('status_pemesanan') as string) || 'Pending';
+		const kurir = (formData.get('kurir') as string) || 'Lainnya';
+		const no_resi = (formData.get('no_resi') as string) || null;
 
 		await db.execute<ResultSetHeader>(
 			`UPDATE Pemesanan 
-			 SET nama_pelanggan=?, id_produk=?, nomor_telpon=?, email=?, alamat=?, status_pemesanan=? 
+			 SET nama_pelanggan=?, id_produk=?, nomor_telpon=?, email=?, alamat=?, status_pemesanan=?, kurir=?, no_resi=? 
 			 WHERE id_pemesanan=?`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, id_pemesanan]
+			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi, id_pemesanan]
 		);
-
-		console.log('Pemesanan updated successfully');
 
 		return NextResponse.json({ message: 'Pemesanan berhasil diperbarui' }, { status: 200 });
 	} catch (error) {
@@ -166,9 +199,12 @@ export async function PUT(request: NextRequest) {
 }
 
 /* ==========================================================
-   DELETE — Hapus pemesanan
+   DELETE — Hapus pemesanan (Admin Only)
    ========================================================== */
 export async function DELETE(request: NextRequest) {
+	const authCheck = await checkAdminAuth(request);
+	if (!authCheck.authenticated) return authCheck.response;
+
 	try {
 		const { searchParams } = new URL(request.url);
 		const id_pemesanan = searchParams.get('id_pemesanan');
@@ -181,8 +217,6 @@ export async function DELETE(request: NextRequest) {
 			'DELETE FROM Pemesanan WHERE id_pemesanan = ?',
 			[id_pemesanan]
 		);
-
-		console.log('Pemesanan deleted successfully');
 
 		return NextResponse.json({ message: 'Pemesanan berhasil dihapus' }, { status: 200 });
 	} catch (error) {
