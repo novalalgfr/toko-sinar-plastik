@@ -8,14 +8,12 @@ interface Kontak extends RowDataPacket {
 	id_kontak: number;
 	deskripsi: string | null;
 	lokasi: string;
+	latitude: number | null;
+	longitude: number | null;
 	nomor_telpon: string;
 	email: string | null;
 	created_at: Date;
 	updated_at: Date;
-}
-
-interface CountResult extends RowDataPacket {
-	total: number;
 }
 
 // Fungsi untuk cek auth ADMIN (untuk POST, PUT, DELETE)
@@ -44,7 +42,7 @@ async function checkAdminAuth(request: NextRequest) {
 }
 
 /* ==========================================================
-   GET — Menampilkan data kontak dengan pagination & search
+   GET — Menampilkan data kontak
    (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
@@ -52,58 +50,25 @@ export async function GET(request: NextRequest) {
 		console.log('Fetching kontak data...');
 
 		const { searchParams } = new URL(request.url);
-		const page = parseInt(searchParams.get('page') || '1');
-		const limit = parseInt(searchParams.get('limit') || '10');
 		const search = searchParams.get('search') || '';
-
-		if (page < 1 || limit < 1) {
-			return NextResponse.json({ message: 'Page dan limit harus lebih dari 0' }, { status: 400 });
-		}
-
-		if (limit > 100) {
-			return NextResponse.json({ message: 'Limit maksimal adalah 100' }, { status: 400 });
-		}
-
-		const offset = (page - 1) * limit;
-
-		let countQuery = 'SELECT COUNT(*) AS total FROM Kontak';
-		let countParams: any[] = [];
 
 		let dataQuery = 'SELECT * FROM Kontak';
 		let dataParams: any[] = [];
 
 		if (search) {
-			const condition = ' WHERE lokasi LIKE ? OR nomor_telpon LIKE ? OR email LIKE ?';
-			countQuery += condition;
-			dataQuery += condition;
+			dataQuery += ' WHERE lokasi LIKE ? OR nomor_telpon LIKE ? OR email LIKE ?';
 			const searchParam = `%${search}%`;
-			countParams = [searchParam, searchParam, searchParam];
 			dataParams = [searchParam, searchParam, searchParam];
 		}
 
-		dataQuery += ' ORDER BY id_kontak DESC LIMIT ? OFFSET ?';
-		dataParams.push(limit, offset);
+		dataQuery += ' ORDER BY id_kontak DESC';
 
-		const [[countRow]] = await db.execute<CountResult[]>(countQuery, countParams);
 		const [rows] = await db.execute<Kontak[]>(dataQuery, dataParams);
-
-		const totalItems = countRow.total;
-		const totalPages = Math.ceil(totalItems / limit);
 
 		return NextResponse.json(
 			{
 				success: true,
-				data: rows,
-				pagination: {
-					currentPage: page,
-					totalPages,
-					totalItems,
-					itemsPerPage: limit,
-					hasNextPage: page < totalPages,
-					hasPrevPage: page > 1,
-					nextPage: page < totalPages ? page + 1 : null,
-					prevPage: page > 1 ? page - 1 : null
-				}
+				data: rows
 			},
 			{ status: 200 }
 		);
@@ -131,6 +96,8 @@ export async function POST(request: NextRequest) {
 
 		const deskripsi = formData.get('deskripsi') as string;
 		const lokasi = formData.get('lokasi') as string;
+		const latitude = formData.get('latitude') ? parseFloat(formData.get('latitude') as string) : null;
+		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
 
@@ -138,9 +105,18 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ message: 'Lokasi dan nomor telepon wajib diisi' }, { status: 400 });
 		}
 
+		// Validasi koordinat jika diisi
+		if (latitude !== null && (latitude < -90 || latitude > 90)) {
+			return NextResponse.json({ message: 'Latitude harus antara -90 dan 90' }, { status: 400 });
+		}
+
+		if (longitude !== null && (longitude < -180 || longitude > 180)) {
+			return NextResponse.json({ message: 'Longitude harus antara -180 dan 180' }, { status: 400 });
+		}
+
 		const [result] = await db.execute<ResultSetHeader>(
-			'INSERT INTO Kontak (deskripsi, lokasi, nomor_telpon, email) VALUES (?, ?, ?, ?)',
-			[deskripsi, lokasi, nomor_telpon, email]
+			'INSERT INTO Kontak (deskripsi, lokasi, latitude, longitude, nomor_telpon, email) VALUES (?, ?, ?, ?, ?, ?)',
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email]
 		);
 
 		console.log('Kontak inserted with ID:', result.insertId);
@@ -177,11 +153,22 @@ export async function PUT(request: NextRequest) {
 		const id_kontak = parseInt(formData.get('id_kontak') as string);
 		const deskripsi = formData.get('deskripsi') as string;
 		const lokasi = formData.get('lokasi') as string;
+		const latitude = formData.get('latitude') ? parseFloat(formData.get('latitude') as string) : null;
+		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
 
 		if (!id_kontak || !lokasi || !nomor_telpon) {
 			return NextResponse.json({ message: 'ID, lokasi, dan nomor telepon wajib diisi' }, { status: 400 });
+		}
+
+		// Validasi koordinat jika diisi
+		if (latitude !== null && (latitude < -90 || latitude > 90)) {
+			return NextResponse.json({ message: 'Latitude harus antara -90 dan 90' }, { status: 400 });
+		}
+
+		if (longitude !== null && (longitude < -180 || longitude > 180)) {
+			return NextResponse.json({ message: 'Longitude harus antara -180 dan 180' }, { status: 400 });
 		}
 
 		const [existingRows] = await db.execute<Kontak[]>('SELECT id_kontak FROM Kontak WHERE id_kontak = ?', [
@@ -193,8 +180,8 @@ export async function PUT(request: NextRequest) {
 		}
 
 		await db.execute<ResultSetHeader>(
-			'UPDATE Kontak SET deskripsi=?, lokasi=?, nomor_telpon=?, email=? WHERE id_kontak=?',
-			[deskripsi, lokasi, nomor_telpon, email, id_kontak]
+			'UPDATE Kontak SET deskripsi=?, lokasi=?, latitude=?, longitude=?, nomor_telpon=?, email=? WHERE id_kontak=?',
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, id_kontak]
 		);
 
 		console.log('Kontak updated successfully');

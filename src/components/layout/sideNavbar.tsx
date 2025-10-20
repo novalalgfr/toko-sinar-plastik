@@ -1,6 +1,6 @@
 'use client';
 
-import { House, List, LogOut, Settings, ShoppingBasket, ShoppingCart, X } from 'lucide-react';
+import { House, List, LogOut, Settings, Settings2, ShoppingBasket, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -8,6 +8,7 @@ import { Dispatch, SetStateAction } from 'react';
 
 const navItems = [
 	{ title: 'Dashboard', href: '/admin/dashboard', icon: House },
+	{ title: 'Web Profil', href: '/admin/web-profil', icon: Settings2 },
 	{ title: 'Produk', href: '/admin/produk', icon: ShoppingBasket },
 	{ title: 'Kategori', href: '/admin/kategori', icon: List },
 	{ title: 'Pesanan', href: '/admin/pesanan', icon: ShoppingCart },
