@@ -7,17 +7,17 @@ export default function Home() {
 		<section className="space-y-12 md:space-y-16 container mx-auto">
 			{/* Header */}
 			<div className="text-center">
-				<h1 className="text-[40px] md:text-2xl font-semibold">
+				{/* <h1 className="text-[40px] md:text-2xl font-semibold mb-6">
 					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-				</h1>
-			</div>
+				</h1> */}
 
-			{/* Image + Stats Section */}
-			<div className="grid md:grid-cols-3 gap-6">
-				<div className="md:col-span-2 h-[600px] bg-gray-200 rounded-xl" />
-				<div className="flex flex-col gap-6">
-					<div className="h-[292px] bg-gray-200 rounded-xl" />
-					<div className="h-[292px] bg-gray-200 rounded-xl" />
+				{/* Image + Stats Section */}
+				<div className="grid md:grid-cols-12 gap-6">
+					<div className="md:col-span-9 h-[608px] bg-gray-200 rounded-xl" />
+					<div className="md:col-span-3 flex flex-col gap-6">
+						<div className="h-[292px] bg-gray-200 rounded-xl" />
+						<div className="h-[292px] bg-gray-200 rounded-xl" />
+					</div>
 				</div>
 			</div>
 

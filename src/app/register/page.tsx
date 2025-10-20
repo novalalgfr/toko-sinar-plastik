@@ -90,7 +90,6 @@ export default function signupPage() {
 			<div className="flex items-center justify-center bg-white p-8">
 				<div className="w-full max-w-sm space-y-8">
 					<div className="text-center">
-						<h1 className="font-black text-2xl mb-6">Toko Sinar Plastik</h1>
 						<h2 className="text-3xl font-bold tracking-tight text-gray-900">Buat Akun Baru</h2>
 						<p className="mt-2 text-gray-600">Daftar untuk memulai berbelanja</p>
 					</div>
@@ -147,7 +146,7 @@ export default function signupPage() {
 								required
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								placeholder="you@example.com"
+								placeholder="johndoe@gmail.com"
 								className="h-12"
 								disabled={loading}
 							/>
@@ -168,7 +167,7 @@ export default function signupPage() {
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								placeholder="••••••••"
-								className="h-12"
+								className="h-12 placeholder:text-gray-400"
 								disabled={loading}
 							/>
 							<p className="text-xs text-gray-500">Minimal 6 karakter</p>
@@ -189,7 +188,7 @@ export default function signupPage() {
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
 								placeholder="••••••••"
-								className="h-12"
+								className="h-12 placeholder:text-gray-400"
 								disabled={loading}
 							/>
 						</div>

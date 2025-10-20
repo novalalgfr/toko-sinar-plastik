@@ -1,13 +1,12 @@
 'use client';
 
-import { Accessibility, House, List, LogOut, Settings, ShoppingBasket, ShoppingCart, X } from 'lucide-react';
+import { House, List, LogOut, Settings, ShoppingBasket, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Dispatch, SetStateAction } from 'react';
 
 const navItems = [
-	{ title: 'Example', href: '/admin/example', icon: Accessibility },
 	{ title: 'Dashboard', href: '/admin/dashboard', icon: House },
 	{ title: 'Produk', href: '/admin/produk', icon: ShoppingBasket },
 	{ title: 'Kategori', href: '/admin/kategori', icon: List },
@@ -48,11 +47,9 @@ export function SideNavbar({ isOpen, setIsOpen }: SideNavbarProps) {
 				{/* Area Atas yang Bisa Scroll */}
 				<div className="flex-1 overflow-y-auto pb-4">
 					<div className="flex justify-between items-center mb-10">
-						<Link
-							href="/"
-							className="font-black text-2xl"
-						>
-							Toko Sinar Plastik
+						<Link href="/admin/dashboard">
+							<h1 className="font-bold text-xl">Sinar Plastik</h1>
+							<h6 className="text-gray-700 text-sm">Kemasan & Bahan Kue</h6>
 						</Link>
 						<button
 							onClick={() => setIsOpen(false)}
@@ -92,7 +89,7 @@ export function SideNavbar({ isOpen, setIsOpen }: SideNavbarProps) {
 						className="w-full px-5 py-3 rounded-full flex items-center gap-4 text-gray-700 hover:bg-[#F6F4F0] transition-colors cursor-pointer text-sm font-medium"
 					>
 						<LogOut size={20} />
-						Logout
+						Keluar
 					</button>
 				</div>
 			</aside>

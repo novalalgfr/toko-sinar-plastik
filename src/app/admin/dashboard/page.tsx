@@ -1,5 +1,5 @@
 'use client';
 
-export default function ExamplePage() {
+export default function DashboardPage() {
 	return <h1>Hello World</h1>;
 }

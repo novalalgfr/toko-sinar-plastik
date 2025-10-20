@@ -58,7 +58,6 @@ export default function LoginPage() {
 			<div className="flex items-center justify-center bg-white p-8">
 				<div className="w-full max-w-sm space-y-8">
 					<div className="text-center">
-						<h1 className="font-black text-2xl mb-6">Toko Sinar Plastik</h1>
 						<h2 className="text-3xl font-bold tracking-tight text-gray-900">Selamat Datang kembali</h2>
 						<p className="mt-2 text-gray-600">Silahkan masukkan email dan password anda.</p>
 					</div>
@@ -86,7 +85,7 @@ export default function LoginPage() {
 								required
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								placeholder="you@example.com"
+								placeholder="johndoe@gmail.com"
 								className="h-12"
 							/>
 						</div>
@@ -105,7 +104,7 @@ export default function LoginPage() {
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								placeholder="••••••••"
-								className="h-12"
+								className="h-12 placeholder:text-gray-400"
 							/>
 						</div>
 						<div>
@@ -114,14 +113,14 @@ export default function LoginPage() {
 								disabled={loading}
 								className="w-full h-12 bg-black text-white hover:bg-gray-800 focus-visible:ring-black cursor-pointer"
 							>
-								{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Login'}
+								{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Masuk'}
 							</Button>
 						</div>
 
 						<div className="text-center text-sm">
 							<span className="text-gray-600">Belum punya akun? </span>
 							<Link
-								href="/signup"
+								href="/register"
 								className="font-semibold text-black hover:underline"
 							>
 								Daftar di sini

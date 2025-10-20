@@ -41,11 +41,9 @@ export function Navbar() {
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo */}
 					<div className="flex items-center space-x-4">
-						<Link
-							href="/"
-							className="font-black text-xl"
-						>
-							Toko Sinar Plastik
+						<Link href="/">
+							<h1 className="font-bold text-xl">Sinar Plastik</h1>
+							<h6 className="text-gray-700 text-sm">Kemasan & Bahan Kue</h6>
 						</Link>
 					</div>
 
@@ -79,11 +77,11 @@ export function Navbar() {
 						</NavigationMenu>
 					</div>
 
-					<div className="flex items-center gap-2">
+					<div className="flex items-center">
 						{status === 'loading' && <Skeleton className="h-10 w-20" />}
 
 						{status === 'unauthenticated' && (
-							<>
+							<div className="flex items-center gap-2">
 								<Button
 									variant="outline"
 									asChild
@@ -91,13 +89,13 @@ export function Navbar() {
 									<Link href="/login">Masuk</Link>
 								</Button>
 								<Button asChild>
-									<Link href="/signup">Daftar</Link>
+									<Link href="/register">Daftar</Link>
 								</Button>
-							</>
+							</div>
 						)}
 
 						{status === 'authenticated' && (
-							<>
+							<div className="flex items-center gap-4">
 								<Link href="/pembayaran">
 									<button
 										className={`rounded-full p-3 cursor-pointer border hover:bg-gray-100 ${
@@ -155,11 +153,11 @@ export function Navbar() {
 											onClick={() => signOut({ callbackUrl: '/' })}
 										>
 											<LogOut className="mr-2 h-4 w-4" />
-											<span>Logout</span>
+											<span>Keluar</span>
 										</DropdownMenuItem>
 									</DropdownMenuContent>
 								</DropdownMenu>
-							</>
+							</div>
 						)}
 					</div>
 

@@ -24,7 +24,10 @@ export function Footer() {
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-16 border-t-2 border-dashed py-12">
 					<div className="space-y-6">
 						<div className="flex items-center space-x-2">
-							<h2 className="font-black text-4xl">W.</h2>
+							<Link href="/">
+								<h1 className="font-bold text-xl">Sinar Plastik</h1>
+								<h6 className="text-gray-700 text-sm">Kemasan & Bahan Kue</h6>
+							</Link>
 						</div>
 						<p className="text-base text-gray-600 leading-relaxed">
 							Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellat quia explicabo
