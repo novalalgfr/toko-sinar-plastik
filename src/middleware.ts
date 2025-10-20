@@ -58,7 +58,7 @@ export default withAuth(
 		};
 
 		// Cek autentikasi untuk semua API
-		const apiPaths = ['/api/produk', '/api/beranda', '/api/kontak', '/api/kategori', '/api/pemesanan'];
+		const apiPaths = ['/api/produk', '/api/beranda', '/api/kontak', '/api/kategori', '/api/pesanan'];
 
 		for (const apiPath of apiPaths) {
 			const authResponse = checkApiAuth(apiPath);
@@ -86,7 +86,7 @@ export default withAuth(
 					pathname.startsWith('/api/beranda') ||
 					pathname.startsWith('/api/kontak') ||
 					pathname.startsWith('/api/kategori') ||
-					pathname.startsWith('/api/pemesanan')
+					pathname.startsWith('/api/pesanan')
 				) {
 					return true;
 				}
@@ -106,6 +106,6 @@ export const config = {
 		'/api/beranda/:path*',
 		'/api/kontak/:path*',
 		'/api/kategori/:path*',
-		'/api/pemesanan/:path*'
+		'/api/pesanan/:path*'
 	]
 };

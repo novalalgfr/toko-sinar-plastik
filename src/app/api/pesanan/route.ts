@@ -7,15 +7,15 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 /* ==========================================================
    INTERFACE DATA
    ========================================================== */
-interface Pemesanan extends RowDataPacket {
-	id_pemesanan: number;
+interface Pesanan extends RowDataPacket {
+	id_pesanan: number;
 	nama_pelanggan: string;
 	id_produk: number | null;
 	nomor_telpon: string;
 	email: string | null;
 	alamat: string;
 	tanggal_pesanan: Date;
-	status_pemesanan: 'Pending' | 'Diproses' | 'Dikirim' | 'Selesai' | 'Dibatalkan';
+	status_pesanan: 'Pending' | 'Diproses' | 'Dikirim' | 'Selesai' | 'Dibatalkan';
 	kurir: 'JNE' | 'J&T' | 'SiCepat' | 'POS' | 'TIKI' | 'Lainnya';
 	no_resi: string | null;
 	created_at: Date;
@@ -54,11 +54,11 @@ async function checkAdminAuth(request: NextRequest) {
 }
 
 /* ==========================================================
-   GET — Ambil data pemesanan (Public)
+   GET — Ambil data pesanan (Public)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
-		console.log('Fetching pemesanan data...');
+		console.log('Fetching pesanan data...');
 
 		const { searchParams } = new URL(request.url);
 		const page = parseInt(searchParams.get('page') || '1');
@@ -73,12 +73,12 @@ export async function GET(request: NextRequest) {
 
 		let countQuery = `
 			SELECT COUNT(*) AS total 
-			FROM Pemesanan p
+			FROM Pesanan p
 			LEFT JOIN Produk pr ON p.id_produk = pr.id_produk
 		`;
 		let dataQuery = `
 			SELECT p.*, pr.nama_produk 
-			FROM Pemesanan p
+			FROM Pesanan p
 			LEFT JOIN Produk pr ON p.id_produk = pr.id_produk
 		`;
 		let params: any[] = [];
@@ -91,11 +91,11 @@ export async function GET(request: NextRequest) {
 			params = [like, like, like];
 		}
 
-		dataQuery += ` ORDER BY p.id_pemesanan DESC LIMIT ? OFFSET ?`;
+		dataQuery += ` ORDER BY p.id_pesanan DESC LIMIT ? OFFSET ?`;
 		params.push(limit, offset);
 
 		const [[countRow]] = await db.execute<CountResult[]>(countQuery, params.slice(0, -2));
-		const [rows] = await db.execute<Pemesanan[]>(dataQuery, params);
+		const [rows] = await db.execute<Pesanan[]>(dataQuery, params);
 
 		const totalItems = countRow.total;
 		const totalPages = Math.ceil(totalItems / limit);
@@ -118,13 +118,13 @@ export async function GET(request: NextRequest) {
 			{ status: 200 }
 		);
 	} catch (error) {
-		console.error('Error fetching pemesanan:', error);
-		return NextResponse.json({ message: 'Gagal mengambil data pemesanan' }, { status: 500 });
+		console.error('Error fetching pesanan:', error);
+		return NextResponse.json({ message: 'Gagal mengambil data pesanan' }, { status: 500 });
 	}
 }
 
 /* ==========================================================
-   POST — Tambah pemesanan baru (Admin Only)
+   POST — Tambah pesanan baru (Admin Only)
    ========================================================== */
 export async function POST(request: NextRequest) {
 	// Auth check
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 	if (!authCheck.authenticated) return authCheck.response;
 
 	try {
-		console.log('Creating new pemesanan...');
+		console.log('Creating new pesanan...');
 
 		const formData = await request.formData();
 
@@ -141,65 +141,62 @@ export async function POST(request: NextRequest) {
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string;
 		const alamat = formData.get('alamat') as string;
-		const status_pemesanan = (formData.get('status_pemesanan') as string) || 'Pending';
+		const status_pesanan = (formData.get('status_pesanan') as string) || 'Pending';
 		const kurir = (formData.get('kurir') as string) || 'Lainnya';
 		const no_resi = (formData.get('no_resi') as string) || null;
 
 		const [result] = await db.execute<ResultSetHeader>(
-			`INSERT INTO Pemesanan 
-			 (nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi) 
+			`INSERT INTO Pesanan 
+			 (nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi) 
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi]
+			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi]
 		);
 
-		return NextResponse.json(
-			{ message: 'Pemesanan berhasil ditambahkan', id: result.insertId },
-			{ status: 201 }
-		);
+		return NextResponse.json({ message: 'Pesanan berhasil ditambahkan', id: result.insertId }, { status: 201 });
 	} catch (error) {
-		console.error('Error creating pemesanan:', error);
-		return NextResponse.json({ message: 'Gagal menambahkan pemesanan' }, { status: 500 });
+		console.error('Error creating pesanan:', error);
+		return NextResponse.json({ message: 'Gagal menambahkan pesanan' }, { status: 500 });
 	}
 }
 
 /* ==========================================================
-   PUT — Update pemesanan (Admin Only)
+   PUT — Update pesanan (Admin Only)
    ========================================================== */
 export async function PUT(request: NextRequest) {
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) return authCheck.response;
 
 	try {
-		console.log('Updating pemesanan...');
+		console.log('Updating pesanan...');
 
 		const formData = await request.formData();
 
-		const id_pemesanan = parseInt(formData.get('id_pemesanan') as string);
+		const id_pesanan = parseInt(formData.get('id_pesanan') as string);
 		const nama_pelanggan = formData.get('nama_pelanggan') as string;
 		const id_produk = formData.get('id_produk') ? parseInt(formData.get('id_produk') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string;
 		const alamat = formData.get('alamat') as string;
-		const status_pemesanan = (formData.get('status_pemesanan') as string) || 'Pending';
+		const status_pesanan = (formData.get('status_pesanan') as string) || 'Pending';
 		const kurir = (formData.get('kurir') as string) || 'Lainnya';
 		const no_resi = (formData.get('no_resi') as string) || null;
 
 		await db.execute<ResultSetHeader>(
-			`UPDATE Pemesanan 
-			 SET nama_pelanggan=?, id_produk=?, nomor_telpon=?, email=?, alamat=?, status_pemesanan=?, kurir=?, no_resi=? 
-			 WHERE id_pemesanan=?`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi, id_pemesanan]
+			`UPDATE Pesanan 
+			 SET nama_pelanggan=?, id_produk=?, nomor_telpon=?, email=?, alamat=?, status_pesanan=?, kurir=?, no_resi=? 
+			 WHERE id_pesanan=?`,
+			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi, id_pesanan]
 		);
 
-		return NextResponse.json({ message: 'Pemesanan berhasil diperbarui' }, { status: 200 });
+		return NextResponse.json({ message: 'Pesanan berhasil diperbarui' }, { status: 200 });
 	} catch (error) {
-		console.error('Error updating pemesanan:', error);
-		return NextResponse.json({ message: 'Gagal memperbarui pemesanan' }, { status: 500 });
+		console.error('Error updating pesanan:', error);
+		return NextResponse.json({ message: 'Gagal memperbarui pesanan' }, { status: 500 });
 	}
 }
 
 /* ==========================================================
-   DELETE — Hapus pemesanan (Admin Only)
+   DELETE — Hapus pesanan (Admin Only)
    ========================================================== */
 export async function DELETE(request: NextRequest) {
 	const authCheck = await checkAdminAuth(request);
@@ -207,20 +204,17 @@ export async function DELETE(request: NextRequest) {
 
 	try {
 		const { searchParams } = new URL(request.url);
-		const id_pemesanan = searchParams.get('id_pemesanan');
+		const id_pesanan = searchParams.get('id_pesanan');
 
-		if (!id_pemesanan) {
-			return NextResponse.json({ message: 'ID pemesanan wajib diisi' }, { status: 400 });
+		if (!id_pesanan) {
+			return NextResponse.json({ message: 'ID pesanan wajib diisi' }, { status: 400 });
 		}
 
-		await db.execute<ResultSetHeader>(
-			'DELETE FROM Pemesanan WHERE id_pemesanan = ?',
-			[id_pemesanan]
-		);
+		await db.execute<ResultSetHeader>('DELETE FROM Pesanan WHERE id_pesanan = ?', [id_pesanan]);
 
-		return NextResponse.json({ message: 'Pemesanan berhasil dihapus' }, { status: 200 });
+		return NextResponse.json({ message: 'Pesanan berhasil dihapus' }, { status: 200 });
 	} catch (error) {
-		console.error('Error deleting pemesanan:', error);
-		return NextResponse.json({ message: 'Gagal menghapus pemesanan' }, { status: 500 });
+		console.error('Error deleting pesanan:', error);
+		return NextResponse.json({ message: 'Gagal menghapus pesanan' }, { status: 500 });
 	}
 }

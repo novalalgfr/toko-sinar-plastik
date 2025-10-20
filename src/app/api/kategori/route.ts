@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 		const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 		const dataWithImageUrls = rows.map((item) => ({
 			...item,
-			image_url: item.gambar ? `${baseUrl}/uploads/${item.gambar}` : null
+			image_url: item.gambar ? `${baseUrl}/${item.gambar}` : null
 		}));
 
 		return NextResponse.json({ data: dataWithImageUrls }, { status: 200 });
