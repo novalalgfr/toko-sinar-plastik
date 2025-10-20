@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
 		if (Array.isArray(existingUsers) && existingUsers.length > 0) {
 			await conn.end();
-			return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+			return NextResponse.json({ error: 'Email already signuped' }, { status: 409 });
 		}
 
 		// Hash password
@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
 
 		await conn.end();
 
-		console.log('✅ User registered:', { name, email, role: 'user' });
+		console.log('✅ User signuped:', { name, email, role: 'user' });
 
 		return NextResponse.json(
 			{
-				message: 'User registered successfully',
+				message: 'User signuped successfully',
 				user: {
 					name,
 					email,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 			{ status: 201 }
 		);
 	} catch (error) {
-		console.error('❌ Signup error:', error);
+		console.error('❌ signup error:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
 }

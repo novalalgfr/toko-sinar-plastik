@@ -1,23 +1,24 @@
 'use client';
 
-import Link from 'next/link';
-import { DataTable, createSortableHeader } from '@/components/custom/DataTable';
+import Image from 'next/image';
+import { DataTable, createInlineActionColumn, createSortableHeader } from '@/components/custom/DataTable';
 import type { ColumnDef, Row } from '@tanstack/react-table';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Button } from '@/components/ui/button';
 
 type CategoryRow = {
 	id: number;
 	name: string;
-	category: string;
+	image: string;
 };
 
 const categories: CategoryRow[] = Array.from({ length: 12 }, (_, i) => ({
 	id: i + 1,
 	name: 'Lorem Ipsum',
-	category: 'Lorem Ipsum'
+	image: 'https://placehold.co/600x400/png'
 }));
 
-const columns: ColumnDef<CategoryRow, unknown>[] = [
+const columns: ColumnDef<CategoryRow>[] = [
 	{
 		id: 'no',
 		header: 'No',
@@ -26,38 +27,46 @@ const columns: ColumnDef<CategoryRow, unknown>[] = [
 		cell: ({ row }: { row: Row<CategoryRow> }) => <span>{row.index + 1}.</span>
 	},
 	{
-		accessorKey: 'name',
-		header: createSortableHeader<CategoryRow>('Nama Barang'),
-		cell: ({ getValue }) => <span className="whitespace-nowrap">{String(getValue() ?? '')}</span>
+		accessorKey: 'image',
+		header: 'Gambar Kategori',
+		cell: ({ getValue }) => (
+			<Image
+				src={String(getValue() ?? '')}
+				alt="Kategori"
+				width={64}
+				height={64}
+				className="w-16 h-16 object-cover rounded"
+			/>
+		)
 	},
 	{
-		accessorKey: 'category',
-		header: createSortableHeader<CategoryRow>('Kategori'),
-		cell: ({ getValue }) => <span className="whitespace-nowrap">{String(getValue() ?? '')}</span>
-	}
+		accessorKey: 'name',
+		header: createSortableHeader<CategoryRow>('Nama Kategori'),
+		cell: ({ getValue }) => (
+			<span className="whitespace-nowrap font-medium text-gray-800">{String(getValue() ?? '')}</span>
+		)
+	},
+	createInlineActionColumn<CategoryRow>(() => (
+		<ButtonGroup>
+			<Button className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
+			<Button className="bg-red-500 text-white hover:bg-red-600">Hapus</Button>
+		</ButtonGroup>
+	))
 ];
 
 export default function KategoriPage() {
 	return (
-		<section className="p-6">
+		<section className="p-4 bg-white rounded-lg shadow">
 			<h1 className="text-2xl font-bold mb-4">Kategori</h1>
-
-			{/* Toolbar kanan: Tambah Kategori */}
-			<div className="mb-3 flex justify-end">
-				<Link href="/kategori/tambah">
-					<Button className="bg-black text-white hover:opacity-90">Tambah Kategori</Button>
-				</Link>
-			</div>
-
 			{/* Tabel (tetap pakai pagination bawaan: Previous/Next) */}
-			<DataTable<CategoryRow, unknown>
+			<DataTable
 				columns={columns}
 				data={categories}
-				showSearch={false}
-				showColumnToggle={false}
-				pageSize={4}
 				searchKey="name"
-				emptyMessage="Tidak ada data."
+				searchPlaceholder="Cari kategori..."
+				onAdd={() => console.log('Tambah Kategori diklik')}
+				addLabel="+ Tambah Kategori"
+				showColumnToggle={false}
 			/>
 		</section>
 	);

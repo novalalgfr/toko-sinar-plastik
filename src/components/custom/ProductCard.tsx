@@ -20,7 +20,7 @@ export function ProductCard({
 	imageAlt = 'Product Image'
 }: ProductCardProps) {
 	return (
-		<div className={`w-[312px] h-[401px] bg-white rounded-2xl shadow-sm flex flex-col ${className}`}>
+		<div className={`w-full h-[400px] bg-white border border-gray-200 rounded-lg flex flex-col ${className}`}>
 			{/* Image (fixed 312x312) */}
 			<div className="w-full h-[312px] bg-gray-200 rounded-t-xl overflow-hidden flex items-center justify-center">
 				{image ? (

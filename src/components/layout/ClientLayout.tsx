@@ -15,7 +15,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
 	const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-	if (pathname === '/login' || pathname === '/signup') {
+	if (pathname === '/login' || pathname === '/register') {
 		return <>{children}</>;
 	}
 

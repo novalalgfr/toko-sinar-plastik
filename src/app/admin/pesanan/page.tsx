@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { DataTable, createSortableHeader } from '@/components/custom/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Image from 'next/image';
+import { Row } from '@tanstack/react-table';
 
 type Pesanan = {
 	name: string;
@@ -12,6 +14,7 @@ type Pesanan = {
 	address: string;
 	date: string;
 	status?: string;
+	image: string;
 };
 
 const productsData: Pesanan[] = [
@@ -21,7 +24,8 @@ const productsData: Pesanan[] = [
 		telp: 628123456789,
 		email: 'aya@example.com',
 		address: 'Jl. Merdeka No. 45, Jakarta',
-		date: '2025-10-19'
+		date: '2025-10-19',
+		image: 'https://placehold.co/600x400/png'
 	},
 	{
 		name: 'Eja',
@@ -30,10 +34,11 @@ const productsData: Pesanan[] = [
 		email: 'eja@example.com',
 		address: 'Jl. Anggrek Raya No. 12, Bandung',
 		date: '2025-10-18',
+		image: 'https://placehold.co/600x400/png'
 	}
 ];
 
-export default function ProdukPage() {
+export default function PesananPage() {
 	const [products, setProducts] = React.useState<Pesanan[]>(productsData);
 
 	const handleStatusChange = (name: string, newStatus: string) => {
@@ -41,8 +46,26 @@ export default function ProdukPage() {
 	};
 
 	const columns = [
-		{ accessorKey: 'name', header: createSortableHeader<Pesanan>('Nama Pelanggan') },
-		{ accessorKey: 'product', header: createSortableHeader<Pesanan>('Nama Produk') },
+		{
+			id: 'no',
+			header: 'No',
+			cell: ({ row }: { row: Row<Pesanan> }) => <span>{row.index + 1}.</span>
+		},
+		{
+			accessorKey: 'image',
+			header: 'Gambar Produk',
+			cell: ({ getValue }: { getValue: () => unknown }) => (
+				<Image
+					src={String(getValue() ?? '')}
+					alt="Produk"
+					width={64}
+					height={64}
+					className="w-16 h-16 object-cover rounded border"
+				/>
+			)
+		},
+		{ accessorKey: 'product', header: 'Nama Produk' },
+		{ accessorKey: 'name', header: 'Nama Pelanggan' },
 		{ accessorKey: 'telp', header: 'Nomor Telepon' },
 		{ accessorKey: 'email', header: 'Email' },
 		{ accessorKey: 'address', header: 'Alamat' },
@@ -79,13 +102,14 @@ export default function ProdukPage() {
 	];
 
 	return (
-		<section className="p-6">
+		<section className="p-4 bg-white rounded-lg shadow">
 			<h1 className="text-2xl font-bold mb-4">Pesanan</h1>
 			<DataTable
 				columns={columns}
 				data={products}
 				searchKey="name"
 				searchPlaceholder="Cari nama pelanggan..."
+				showColumnToggle={false}
 			/>
 		</section>
 	);

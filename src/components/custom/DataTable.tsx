@@ -107,7 +107,7 @@ export function DataTable<TData, TValue>({
 						{onAdd && (
 							<Button
 								onClick={onAdd}
-								className="bg-black text-white hover:bg-gray-800"
+								className="bg-black text-white hover:bg-gray-800 cursor-pointer"
 							>
 								{addLabel ?? '+ Tambah'}
 							</Button>
@@ -205,13 +205,14 @@ export function DataTable<TData, TValue>({
 					<div className="flex-1 text-sm text-muted-foreground">
 						{table.getFilteredRowModel().rows.length > 0 ? (
 							<>
-								Showing{' '}
-								{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+								Menampilkan{' '}
+								{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
+								hingga{' '}
 								{Math.min(
 									(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
 									table.getFilteredRowModel().rows.length
 								)}{' '}
-								of {table.getFilteredRowModel().rows.length} results
+								dari {table.getFilteredRowModel().rows.length} hasil
 							</>
 						) : (
 							'No data'
@@ -225,7 +226,7 @@ export function DataTable<TData, TValue>({
 							disabled={!table.getCanPreviousPage()}
 							className="cursor-pointer"
 						>
-							Previous
+							Sebelumnya
 						</Button>
 						<Button
 							variant="outline"
@@ -234,7 +235,7 @@ export function DataTable<TData, TValue>({
 							disabled={!table.getCanNextPage()}
 							className="cursor-pointer"
 						>
-							Next
+							Selanjutnya
 						</Button>
 					</div>
 				</div>
@@ -282,6 +283,16 @@ export function createActionColumn<TData>(actions: (row: TData) => React.ReactNo
 					<DropdownMenuContent align="end">{actions(row.original)}</DropdownMenuContent>
 				</DropdownMenu>
 			);
+		}
+	};
+}
+
+export function createInlineActionColumn<TData>(actions: (row: TData) => React.ReactNode) {
+	return {
+		id: 'actions',
+		enableHiding: false,
+		cell: ({ row }: { row: Row<TData> }) => {
+			return <div className="flex items-center">{actions(row.original)}</div>;
 		}
 	};
 }

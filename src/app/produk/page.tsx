@@ -4,7 +4,7 @@ import { ProductCard } from '@/components/custom/ProductCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowUpDown } from 'lucide-react';
-import { toast } from 'sonner'; 
+import { toast } from 'sonner';
 
 export default function ProductPage() {
 	const [search, setSearch] = React.useState('');
@@ -32,7 +32,7 @@ export default function ProductPage() {
 	return (
 		<div className="min-h-screen flex flex-col items-center py-8">
 			{/* Wrapper utama biar sejajar */}
-			<div className="w-full max-w-[1320px]">
+			<div className="w-full container mx-auto">
 				{/* Search & Filter */}
 				<div className="flex justify-between items-center mb-8">
 					{/* Search */}
@@ -58,7 +58,7 @@ export default function ProductPage() {
 				</div>
 
 				{/* Product Cards */}
-				<div className="flex flex-wrap justify-between gap-y-8">
+				<div className="grid grid-cols-4 gap-6">
 					{filteredProducts.map((p, i) => (
 						<ProductCard
 							key={i}

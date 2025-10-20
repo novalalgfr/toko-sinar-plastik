@@ -13,9 +13,9 @@ export default function Home() {
 			</div>
 
 			{/* Image + Stats Section */}
-			<div className="grid md:grid-cols-3 gap-4">
+			<div className="grid md:grid-cols-3 gap-6">
 				<div className="md:col-span-2 h-[600px] bg-gray-200 rounded-xl" />
-				<div className="flex flex-col gap-4">
+				<div className="flex flex-col gap-6">
 					<div className="h-[292px] bg-gray-200 rounded-xl" />
 					<div className="h-[292px] bg-gray-200 rounded-xl" />
 				</div>

@@ -79,13 +79,21 @@ export function Navbar() {
 						</NavigationMenu>
 					</div>
 
-					<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2">
 						{status === 'loading' && <Skeleton className="h-10 w-20" />}
 
 						{status === 'unauthenticated' && (
-							<Button asChild>
-								<Link href="/login">Login</Link>
-							</Button>
+							<>
+								<Button
+									variant="outline"
+									asChild
+								>
+									<Link href="/login">Masuk</Link>
+								</Button>
+								<Button asChild>
+									<Link href="/signup">Daftar</Link>
+								</Button>
+							</>
 						)}
 
 						{status === 'authenticated' && (

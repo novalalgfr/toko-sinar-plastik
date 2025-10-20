@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 // app/signup/page.tsx
 'use client';
 
@@ -9,7 +10,7 @@ import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
-export default function SignUpPage() {
+export default function signupPage() {
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -56,7 +57,7 @@ export default function SignUpPage() {
 
 			if (!response.ok) {
 				// Translate error messages ke Indonesia
-				if (data.error === 'Email already registered') {
+				if (data.error === 'Email already signuped') {
 					setError('Email sudah terdaftar');
 				} else if (data.error === 'Invalid email format') {
 					setError('Format email tidak valid');
@@ -74,7 +75,7 @@ export default function SignUpPage() {
 				router.push('/login');
 			}, 2000);
 		} catch (err) {
-			console.error('Signup error:', err);
+			console.error('signup error:', err);
 			setError('Terjadi kesalahan saat pendaftaran');
 			setLoading(false);
 		}
@@ -209,7 +210,7 @@ export default function SignUpPage() {
 								href="/login"
 								className="font-semibold text-black hover:underline"
 							>
-								Login di sini
+								Masuk di sini
 							</Link>
 						</div>
 					</form>
