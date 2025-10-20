@@ -76,25 +76,6 @@ export default function PesananPage() {
 			cell: ({ row }: { row: Row<Pesanan> }) => <span>{row.index + 1}.</span>
 		},
 		{
-			id: 'produk',
-			header: 'Produk',
-			cell: ({ row }: { row: { original: Pesanan } }) => (
-				<div className="space-y-1.5">
-					{row.original.produk?.map((item, index) => (
-						<div
-							key={index}
-							className="rounded-md bg-muted/50 p-2"
-						>
-							<div className="font-medium text-sm mb-0.5">{item.nama_produk}</div>
-							<div className="text-xs text-muted-foreground">
-								{item.jumlah}× • Rp {Number(item.subtotal).toLocaleString('id-ID')}
-							</div>
-						</div>
-					))}
-				</div>
-			)
-		},
-		{
 			accessorKey: 'nama_pelanggan',
 			header: 'Nama Pelanggan'
 		},
@@ -109,13 +90,6 @@ export default function PesananPage() {
 		{
 			accessorKey: 'alamat',
 			header: 'Alamat'
-		},
-		{
-			accessorKey: 'total_harga',
-			header: 'Total Harga',
-			cell: ({ getValue }: { getValue: () => unknown }) => (
-				<span>Rp {Number(getValue()).toLocaleString('id-ID')}</span>
-			)
 		},
 		{
 			accessorKey: 'tanggal_pesanan',
@@ -183,19 +157,49 @@ export default function PesananPage() {
 					</Select>
 				);
 			}
+		},
+		{
+			id: 'produk',
+			header: 'Produk',
+			cell: ({ row }: { row: { original: Pesanan } }) => (
+				<div className="space-y-1.5">
+					{row.original.produk?.map((item, index) => (
+						<div
+							key={index}
+							className="rounded-md bg-muted/50 p-2"
+						>
+							<div className="font-medium text-sm mb-0.5">{item.nama_produk}</div>
+							<div className="text-xs text-muted-foreground">
+								{item.jumlah}× • Rp {Number(item.subtotal).toLocaleString('id-ID')}
+							</div>
+						</div>
+					))}
+				</div>
+			)
+		},
+		{
+			accessorKey: 'total_harga',
+			header: 'Total Harga',
+			cell: ({ getValue }: { getValue: () => unknown }) => (
+				<span>Rp {Number(getValue()).toLocaleString('id-ID')}</span>
+			)
 		}
 	];
 
 	return (
-		<section className="p-4 bg-white rounded-lg shadow">
-			{/* <h1 className="text-2xl font-bold mb-4">Pesanan</h1> */}
-			<DataTable
-				columns={columns}
-				data={products}
-				searchKey="nama_pelanggan" // Ubah dari "name" ke "nama_pelanggan"
-				searchPlaceholder="Cari nama pelanggan..."
-				showColumnToggle={false}
-			/>
+		<section>
+			<div className="flex items-center gap-4 mb-4">
+				<h1 className="text-2xl font-bold">Pesanan</h1>
+			</div>
+			<div className="p-4 bg-white rounded-lg shadow">
+				<DataTable
+					columns={columns}
+					data={products}
+					searchKey="nama_pelanggan"
+					searchPlaceholder="Cari nama pelanggan..."
+					showColumnToggle={false}
+				/>
+			</div>
 		</section>
 	);
 }

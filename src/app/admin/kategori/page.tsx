@@ -56,18 +56,21 @@ const columns: ColumnDef<CategoryRow>[] = [
 
 export default function KategoriPage() {
 	return (
-		<section className="p-4 bg-white rounded-lg shadow">
-			<h1 className="text-2xl font-bold mb-4">Kategori</h1>
-			{/* Tabel (tetap pakai pagination bawaan: Previous/Next) */}
-			<DataTable
-				columns={columns}
-				data={categories}
-				searchKey="name"
-				searchPlaceholder="Cari kategori..."
-				onAdd={() => console.log('Tambah Kategori diklik')}
-				addLabel="+ Tambah Kategori"
-				showColumnToggle={false}
-			/>
+		<section>
+			<div className="flex items-center gap-4 mb-4">
+				<h1 className="text-2xl font-bold">Kategori</h1>
+			</div>
+			<div className="p-4 bg-white rounded-lg shadow">
+				<DataTable
+					columns={columns}
+					data={categories}
+					searchKey="name"
+					searchPlaceholder="Cari kategori..."
+					onAdd={() => console.log('Tambah Kategori diklik')}
+					addLabel="+ Tambah Kategori"
+					showColumnToggle={false}
+				/>
+			</div>
 		</section>
 	);
 }

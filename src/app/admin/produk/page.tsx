@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DataTable, createSortableHeader, createInlineActionColumn } from '@/components/custom/DataTable';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -48,11 +49,21 @@ type ApiResponse = {
 };
 
 export default function ProdukPage() {
+	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	// Ambil page dan limit dari URL params
+	const pageFromUrl = parseInt(searchParams.get('page') || '1');
+	const limitFromUrl = parseInt(searchParams.get('limit') || '10');
+
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
+	const [pagination, setPagination] = useState({
+		currentPage: 1,
+		totalItems: 0,
+		totalPages: 1
+	});
 
 	// State untuk delete confirmation dialog
 	const [deleteDialog, setDeleteDialog] = useState({
@@ -60,14 +71,22 @@ export default function ProdukPage() {
 		product: null as Product | null
 	});
 
-	const fetchProducts = async (page: number = 1) => {
+	// Function untuk update URL params
+	const updateUrlParams = (page: number, limit: number) => {
+		const params = new URLSearchParams();
+		params.set('page', page.toString());
+		params.set('limit', limit.toString());
+		router.push(`?${params.toString()}`, { scroll: false });
+	};
+
+	const fetchProducts = async (page: number = 1, limit: number = 10) => {
 		try {
 			setLoading(true);
 			setError(null);
 
 			const params = new URLSearchParams({
 				page: page.toString(),
-				limit: '10'
+				limit: limit.toString()
 			});
 
 			const response = await fetch(`/api/produk?${params.toString()}`);
@@ -79,8 +98,14 @@ export default function ProdukPage() {
 			const data: ApiResponse = await response.json();
 
 			setProducts(data.data);
-			setCurrentPage(data.pagination.currentPage);
-			setTotalPages(data.pagination.totalPages);
+			setPagination({
+				currentPage: data.pagination.currentPage,
+				totalItems: data.pagination.totalItems,
+				totalPages: data.pagination.totalPages
+			});
+
+			// Update URL params setelah fetch berhasil
+			updateUrlParams(data.pagination.currentPage, limit);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
 			console.error('Error fetching products:', err);
@@ -90,9 +115,10 @@ export default function ProdukPage() {
 		}
 	};
 
+	// Effect untuk fetch data ketika URL params berubah
 	useEffect(() => {
-		fetchProducts(currentPage);
-	}, [currentPage]);
+		fetchProducts(pageFromUrl, limitFromUrl);
+	}, [pageFromUrl, limitFromUrl]);
 
 	const handleEdit = (product: Product) => {
 		window.location.href = `/admin/produk/edit/${product.id_produk}`;
@@ -123,7 +149,8 @@ export default function ProdukPage() {
 
 			setDeleteDialog({ open: false, product: null });
 
-			fetchProducts(currentPage);
+			// Refresh data
+			fetchProducts(pageFromUrl, limitFromUrl);
 		} catch (error) {
 			console.error('Error deleting product:', error);
 			toast.error('Gagal menghapus produk', {
@@ -137,7 +164,7 @@ export default function ProdukPage() {
 			accessorKey: 'id_produk',
 			header: 'No',
 			cell: ({ row }: { row: { index: number } }) => {
-				return (currentPage - 1) * 10 + row.index + 1;
+				return (pagination.currentPage - 1) * limitFromUrl + row.index + 1;
 			}
 		},
 		{
@@ -236,7 +263,7 @@ export default function ProdukPage() {
 				<h1 className="text-2xl font-bold mb-4">Produk</h1>
 				<div className="text-center py-8">
 					<p className="text-red-600 mb-4">{error}</p>
-					<Button onClick={() => fetchProducts(currentPage)}>Coba Lagi</Button>
+					<Button onClick={() => fetchProducts(pageFromUrl, limitFromUrl)}>Coba Lagi</Button>
 				</div>
 			</section>
 		);
@@ -262,32 +289,12 @@ export default function ProdukPage() {
 						onAdd={() => (window.location.href = '/admin/produk/tambah')}
 						addLabel="+ Tambah Produk"
 						showColumnToggle={false}
+						// Props untuk URL pagination
+						useUrlPagination={true}
+						totalItems={pagination.totalItems}
+						currentPage={pagination.currentPage}
+						pageSize={limitFromUrl}
 					/>
-
-					{/* Pagination */}
-					{totalPages > 1 && (
-						<div className="flex justify-center items-center gap-2 mt-4">
-							<Button
-								onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-								disabled={currentPage === 1}
-								variant="outline"
-							>
-								Previous
-							</Button>
-
-							<span className="text-sm text-gray-600">
-								Halaman {currentPage} dari {totalPages}
-							</span>
-
-							<Button
-								onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-								disabled={currentPage === totalPages}
-								variant="outline"
-							>
-								Next
-							</Button>
-						</div>
-					)}
 				</div>
 			)}
 

@@ -14,6 +14,10 @@ interface Kategori extends RowDataPacket {
 	updated_at: Date;
 }
 
+interface CountResult extends RowDataPacket {
+	total: number;
+}
+
 // 📂 Folder upload
 const uploadDir = path.join(process.cwd(), 'public', 'uploads');
 
@@ -46,22 +50,118 @@ async function checkAdminAuth(request: NextRequest) {
 	return { authenticated: true, token };
 }
 
+// Fungsi untuk menambahkan URL gambar
+function addImageUrl(data: Kategori[], baseUrl: string) {
+	return data.map((item) => ({
+		...item,
+		image_url: item.gambar ? `${baseUrl}/uploads/${item.gambar}` : null
+	}));
+}
+
+// Fungsi untuk menambahkan URL gambar untuk single kategori
+function addImageUrlSingle(item: Kategori, baseUrl: string) {
+	return {
+		...item,
+		image_url: item.gambar ? `${baseUrl}/uploads/${item.gambar}` : null
+	};
+}
+
 /* =========================================================
-   🟢 GET: Ambil semua kategori (PUBLIC)
+   🟢 GET: Ambil kategori dengan pagination dan pencarian
+   ATAU detail kategori berdasarkan ID (PUBLIC)
 ========================================================= */
 export async function GET(request: NextRequest) {
 	try {
-		console.log('📥 Mengambil data kategori...');
+		const { searchParams } = new URL(request.url);
+		const id = searchParams.get('id');
 
-		const [rows] = await db.execute<Kategori[]>('SELECT * FROM kategori ORDER BY id_kategori DESC');
+		// CASE 1: Jika ada parameter ID, return detail kategori
+		if (id) {
+			console.log('📥 Mengambil kategori dengan ID:', id);
 
+			const categoryId = parseInt(id);
+			if (isNaN(categoryId)) {
+				return NextResponse.json({ message: 'ID kategori tidak valid' }, { status: 400 });
+			}
+
+			const [rows] = await db.execute<Kategori[]>('SELECT * FROM kategori WHERE id_kategori = ?', [categoryId]);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Kategori tidak ditemukan' }, { status: 404 });
+			}
+
+			const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+			const categoryWithUrl = addImageUrlSingle(rows[0], baseUrl);
+
+			return NextResponse.json(
+				{
+					success: true,
+					data: categoryWithUrl
+				},
+				{ status: 200 }
+			);
+		}
+
+		// CASE 2: Jika tidak ada ID, return list kategori dengan pagination
+		console.log('📥 Mengambil data kategori dengan pagination...');
+
+		const page = parseInt(searchParams.get('page') || '1');
+		const limit = parseInt(searchParams.get('limit') || '10');
+		const search = searchParams.get('search') || '';
+
+		if (page < 1 || limit < 1) {
+			return NextResponse.json({ message: 'Page dan limit harus lebih dari 0' }, { status: 400 });
+		}
+
+		if (limit > 100) {
+			return NextResponse.json({ message: 'Limit maksimal adalah 100' }, { status: 400 });
+		}
+
+		const offset = (page - 1) * limit;
+
+		let countQuery = 'SELECT COUNT(*) AS total FROM kategori';
+		let countParams: string[] = [];
+
+		let dataQuery = 'SELECT * FROM kategori';
+		let dataParams: (string | number)[] = [];
+
+		if (search) {
+			const condition = ' WHERE nama_kategori LIKE ?';
+			countQuery += condition;
+			dataQuery += condition;
+			const searchParam = `%${search}%`;
+			countParams = [searchParam];
+			dataParams = [searchParam];
+		}
+
+		dataQuery += ' ORDER BY id_kategori DESC LIMIT ? OFFSET ?';
+		dataParams.push(limit, offset);
+
+		const [[countRow]] = await db.execute<CountResult[]>(countQuery, countParams);
+		const [rows] = await db.execute<Kategori[]>(dataQuery, dataParams);
+
+		const totalItems = countRow.total;
+		const totalPages = Math.ceil(totalItems / limit);
 		const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-		const dataWithImageUrls = rows.map((item) => ({
-			...item,
-			image_url: item.gambar ? `${baseUrl}/${item.gambar}` : null
-		}));
+		const dataWithUrls = addImageUrl(rows, baseUrl);
 
-		return NextResponse.json({ data: dataWithImageUrls }, { status: 200 });
+		return NextResponse.json(
+			{
+				success: true,
+				data: dataWithUrls,
+				pagination: {
+					currentPage: page,
+					totalPages,
+					totalItems,
+					itemsPerPage: limit,
+					hasNextPage: page < totalPages,
+					hasPrevPage: page > 1,
+					nextPage: page < totalPages ? page + 1 : null,
+					prevPage: page > 1 ? page - 1 : null
+				}
+			},
+			{ status: 200 }
+		);
 	} catch (error) {
 		console.error('❌ Gagal mengambil data kategori:', error);
 		return NextResponse.json({ message: 'Koneksi database gagal' }, { status: 500 });

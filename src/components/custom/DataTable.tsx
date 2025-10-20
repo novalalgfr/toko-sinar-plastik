@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Search } from 'lucide-react';
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +39,11 @@ interface DataTableProps<TData, TValue> {
 	emptyMessage?: string;
 	onAdd?: () => void;
 	addLabel?: string;
+	// Props baru untuk URL pagination
+	useUrlPagination?: boolean;
+	totalItems?: number;
+	currentPage?: number;
+	onPageChange?: (page: number) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -52,11 +58,35 @@ export function DataTable<TData, TValue>({
 	className = '',
 	emptyMessage = 'Tidak ada data.',
 	onAdd,
-	addLabel
+	addLabel,
+	useUrlPagination = false,
+	totalItems,
+	currentPage: externalCurrentPage,
+	onPageChange
 }: DataTableProps<TData, TValue>) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
+
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+
+	// State untuk internal pagination (jika tidak pakai URL)
+	const [internalPage, setInternalPage] = React.useState(0);
+
+	// Effect untuk set default URL params saat pertama kali mount
+	React.useEffect(() => {
+		if (useUrlPagination) {
+			const pageParam = searchParams.get('page');
+			const limitParam = searchParams.get('limit');
+
+			// Jika tidak ada params di URL, set default
+			if (!pageParam || !limitParam) {
+				const defaultPage = externalCurrentPage || 1;
+				updateUrlParams(defaultPage);
+			}
+		}
+	}, []); // Run only once on mount
 
 	const table = useReactTable({
 		data,
@@ -68,17 +98,105 @@ export function DataTable<TData, TValue>({
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		onColumnVisibilityChange: setColumnVisibility,
+		manualPagination: useUrlPagination, // Jika pakai URL, pagination manual
+		pageCount: useUrlPagination && totalItems ? Math.ceil(totalItems / pageSize) : undefined,
 		initialState: {
 			pagination: {
-				pageSize: pageSize
+				pageSize: pageSize,
+				pageIndex: useUrlPagination ? (externalCurrentPage ? externalCurrentPage - 1 : 0) : 0
 			}
 		},
 		state: {
 			sorting,
 			columnFilters,
-			columnVisibility
+			columnVisibility,
+			pagination: {
+				pageSize: pageSize,
+				pageIndex: useUrlPagination ? (externalCurrentPage ? externalCurrentPage - 1 : 0) : internalPage
+			}
 		}
 	});
+
+	// Function untuk update URL params
+	const updateUrlParams = (page: number) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set('page', page.toString());
+		params.set('limit', pageSize.toString());
+		router.push(`?${params.toString()}`, { scroll: false });
+	};
+
+	// Handler untuk previous page
+	const handlePreviousPage = () => {
+		if (useUrlPagination) {
+			const newPage = (externalCurrentPage || 1) - 1;
+			if (newPage >= 1) {
+				if (onPageChange) {
+					onPageChange(newPage);
+				} else {
+					updateUrlParams(newPage);
+				}
+			}
+		} else {
+			table.previousPage();
+			setInternalPage((prev) => prev - 1);
+		}
+	};
+
+	// Handler untuk next page
+	const handleNextPage = () => {
+		if (useUrlPagination) {
+			const totalPages = totalItems ? Math.ceil(totalItems / pageSize) : 1;
+			const newPage = (externalCurrentPage || 1) + 1;
+			if (newPage <= totalPages) {
+				if (onPageChange) {
+					onPageChange(newPage);
+				} else {
+					updateUrlParams(newPage);
+				}
+			}
+		} else {
+			table.nextPage();
+			setInternalPage((prev) => prev + 1);
+		}
+	};
+
+	// Hitung pagination info
+	const getPaginationInfo = () => {
+		if (useUrlPagination && totalItems !== undefined) {
+			const currentPageNum = externalCurrentPage || 1;
+			const start = (currentPageNum - 1) * pageSize + 1;
+			const end = Math.min(currentPageNum * pageSize, totalItems);
+			const totalPages = Math.ceil(totalItems / pageSize);
+
+			return {
+				start,
+				end,
+				total: totalItems,
+				currentPage: currentPageNum,
+				totalPages,
+				canPrevious: currentPageNum > 1,
+				canNext: currentPageNum < totalPages
+			};
+		} else {
+			const rows = table.getFilteredRowModel().rows;
+			const pageIndex = table.getState().pagination.pageIndex;
+			const pageSize = table.getState().pagination.pageSize;
+			const start = pageIndex * pageSize + 1;
+			const end = Math.min((pageIndex + 1) * pageSize, rows.length);
+
+			return {
+				start,
+				end,
+				total: rows.length,
+				currentPage: pageIndex + 1,
+				totalPages: Math.ceil(rows.length / pageSize),
+				canPrevious: table.getCanPreviousPage(),
+				canNext: table.getCanNextPage()
+			};
+		}
+	};
+
+	const paginationInfo = getPaginationInfo();
 
 	return (
 		<div className={`w-full max-w-sm sm:max-w-none ${className}`}>
@@ -103,7 +221,7 @@ export function DataTable<TData, TValue>({
 					</div>
 
 					<div className="flex items-center gap-2">
-						{/* Tambah Produk */}
+						{/* Tambah Button */}
 						{onAdd && (
 							<Button
 								onClick={onAdd}
@@ -206,16 +324,16 @@ export function DataTable<TData, TValue>({
 			{showPagination && (
 				<div className="flex items-center justify-end space-x-2 py-4">
 					<div className="flex-1 text-sm text-muted-foreground">
-						{table.getFilteredRowModel().rows.length > 0 ? (
+						{paginationInfo.total > 0 ? (
 							<>
-								Menampilkan{' '}
-								{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
-								hingga{' '}
-								{Math.min(
-									(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-									table.getFilteredRowModel().rows.length
-								)}{' '}
-								dari {table.getFilteredRowModel().rows.length} hasil
+								Menampilkan {paginationInfo.start} hingga {paginationInfo.end} dari{' '}
+								{paginationInfo.total} hasil
+								{useUrlPagination && (
+									<>
+										{' '}
+										(Halaman {paginationInfo.currentPage} dari {paginationInfo.totalPages})
+									</>
+								)}
 							</>
 						) : (
 							'No data'
@@ -225,8 +343,8 @@ export function DataTable<TData, TValue>({
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={() => table.previousPage()}
-							disabled={!table.getCanPreviousPage()}
+							onClick={handlePreviousPage}
+							disabled={!paginationInfo.canPrevious}
 							className="cursor-pointer"
 						>
 							Sebelumnya
@@ -234,8 +352,8 @@ export function DataTable<TData, TValue>({
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
+							onClick={handleNextPage}
+							disabled={!paginationInfo.canNext}
 							className="cursor-pointer"
 						>
 							Selanjutnya
