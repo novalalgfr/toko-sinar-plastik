@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { db } from '@/lib/db';
@@ -7,25 +6,40 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 /* ==========================================================
    INTERFACE DATA
    ========================================================== */
+interface ProdukItem extends RowDataPacket {
+	id_produk: number;
+	nama_produk: string;
+	jumlah: number;
+	subtotal: number;
+}
+
 interface Pesanan extends RowDataPacket {
 	id_pesanan: number;
 	nama_pelanggan: string;
-	id_produk: number | null;
 	nomor_telpon: string;
 	email: string | null;
 	alamat: string;
 	tanggal_pesanan: Date;
-	status_pesanan: 'Pending' | 'Diproses' | 'Dikirim' | 'Selesai' | 'Dibatalkan';
-	kurir: 'JNE' | 'J&T' | 'SiCepat' | 'POS' | 'TIKI' | 'Lainnya';
+	status_pesanan: string;
+	kurir: string;
 	no_resi: string | null;
+	total_harga?: number;
 	created_at: Date;
 	updated_at: Date;
-	nama_produk?: string;
+	produk?: ProdukItem[];
 }
 
 interface CountResult extends RowDataPacket {
 	total: number;
 }
+
+interface ProdukInput {
+	id_produk: number;
+	harga: number;
+	jumlah: number;
+}
+
+type QueryParam = string | number | null;
 
 /* ==========================================================
    AUTH FUNCTION (ADMIN ONLY)
@@ -54,48 +68,119 @@ async function checkAdminAuth(request: NextRequest) {
 }
 
 /* ==========================================================
-   GET — Ambil data pesanan (Public)
+   GET — Ambil semua pesanan dengan pagination (Public)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
-		console.log('Fetching pesanan data...');
-
 		const { searchParams } = new URL(request.url);
+		const id = searchParams.get('id');
+
+		// CASE 1: Jika ada parameter ID, return detail pesanan
+		if (id) {
+			console.log('Fetching pesanan with ID:', id);
+
+			const pesananId = parseInt(id);
+			if (isNaN(pesananId)) {
+				return NextResponse.json({ message: 'ID pesanan tidak valid' }, { status: 400 });
+			}
+
+			const [rows] = await db.execute<Pesanan[]>('SELECT * FROM pesanan WHERE id_pesanan = ?', [pesananId]);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
+			}
+
+			const pesanan = rows[0];
+
+			// Ambil detail produk untuk pesanan ini
+			const [produkRows] = await db.execute<ProdukItem[]>(
+				`
+				SELECT dp.id_produk, pr.nama_produk, dp.jumlah, dp.subtotal
+				FROM detail_pesanan dp
+				JOIN produk pr ON dp.id_produk = pr.id_produk
+				WHERE dp.id_pesanan = ?
+			`,
+				[pesanan.id_pesanan]
+			);
+
+			pesanan.produk = produkRows;
+			pesanan.total_harga = produkRows.reduce((sum, p) => sum + Number(p.subtotal), 0);
+
+			return NextResponse.json(
+				{
+					success: true,
+					data: pesanan
+				},
+				{ status: 200 }
+			);
+		}
+
+		// CASE 2: Jika tidak ada ID, return list pesanan dengan pagination
+		console.log('Fetching pesanan list...');
+
 		const page = parseInt(searchParams.get('page') || '1');
 		const limit = parseInt(searchParams.get('limit') || '10');
 		const search = searchParams.get('search') || '';
+		const status = searchParams.get('status') || '';
 
 		if (page < 1 || limit < 1) {
 			return NextResponse.json({ message: 'Page dan limit harus lebih dari 0' }, { status: 400 });
 		}
 
-		const offset = (page - 1) * limit;
-
-		let countQuery = `
-			SELECT COUNT(*) AS total 
-			FROM Pesanan p
-			LEFT JOIN Produk pr ON p.id_produk = pr.id_produk
-		`;
-		let dataQuery = `
-			SELECT p.*, pr.nama_produk 
-			FROM Pesanan p
-			LEFT JOIN Produk pr ON p.id_produk = pr.id_produk
-		`;
-		let params: any[] = [];
-
-		if (search) {
-			const condition = ` WHERE p.nama_pelanggan LIKE ? OR pr.nama_produk LIKE ? OR p.nomor_telpon LIKE ?`;
-			countQuery += condition;
-			dataQuery += condition;
-			const like = `%${search}%`;
-			params = [like, like, like];
+		if (limit > 100) {
+			return NextResponse.json({ message: 'Limit maksimal adalah 100' }, { status: 400 });
 		}
 
-		dataQuery += ` ORDER BY p.id_pesanan DESC LIMIT ? OFFSET ?`;
-		params.push(limit, offset);
+		const offset = (page - 1) * limit;
 
-		const [[countRow]] = await db.execute<CountResult[]>(countQuery, params.slice(0, -2));
-		const [rows] = await db.execute<Pesanan[]>(dataQuery, params);
+		let countQuery = 'SELECT COUNT(*) AS total FROM pesanan';
+		const countParams: QueryParam[] = [];
+
+		let dataQuery = 'SELECT * FROM pesanan';
+		const dataParams: QueryParam[] = [];
+
+		const conditions: string[] = [];
+
+		if (search) {
+			conditions.push('(nama_pelanggan LIKE ? OR nomor_telpon LIKE ? OR email LIKE ? OR no_resi LIKE ?)');
+			const searchParam = `%${search}%`;
+			countParams.push(searchParam, searchParam, searchParam, searchParam);
+			dataParams.push(searchParam, searchParam, searchParam, searchParam);
+		}
+
+		if (status) {
+			conditions.push('status_pesanan = ?');
+			countParams.push(status);
+			dataParams.push(status);
+		}
+
+		if (conditions.length > 0) {
+			const whereClause = ' WHERE ' + conditions.join(' AND ');
+			countQuery += whereClause;
+			dataQuery += whereClause;
+		}
+
+		dataQuery += ' ORDER BY id_pesanan DESC LIMIT ? OFFSET ?';
+		dataParams.push(limit, offset);
+
+		const [[countRow]] = await db.execute<CountResult[]>(countQuery, countParams);
+		const [pesananRows] = await db.execute<Pesanan[]>(dataQuery, dataParams);
+
+		// Ambil detail produk untuk setiap pesanan
+		for (const pesanan of pesananRows) {
+			const [produkRows] = await db.execute<ProdukItem[]>(
+				`
+				SELECT dp.id_produk, pr.nama_produk, dp.jumlah, dp.subtotal
+				FROM detail_pesanan dp
+				JOIN produk pr ON dp.id_produk = pr.id_produk
+				WHERE dp.id_pesanan = ?
+			`,
+				[pesanan.id_pesanan]
+			);
+
+			pesanan.produk = produkRows;
+			pesanan.total_harga = produkRows.reduce((sum, p) => sum + Number(p.subtotal), 0);
+		}
 
 		const totalItems = countRow.total;
 		const totalPages = Math.ceil(totalItems / limit);
@@ -103,7 +188,7 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json(
 			{
 				success: true,
-				data: rows,
+				data: pesananRows,
 				pagination: {
 					currentPage: page,
 					totalPages,
@@ -127,32 +212,65 @@ export async function GET(request: NextRequest) {
    POST — Tambah pesanan baru (Admin Only)
    ========================================================== */
 export async function POST(request: NextRequest) {
-	// Auth check
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) return authCheck.response;
 
 	try {
-		console.log('Creating new pesanan...');
+		const body = await request.json();
+		const {
+			nama_pelanggan,
+			nomor_telpon,
+			email,
+			alamat,
+			status_pesanan = 'Pending',
+			kurir = 'Lainnya',
+			no_resi = null,
+			produk
+		}: {
+			nama_pelanggan: string;
+			nomor_telpon: string;
+			email?: string;
+			alamat: string;
+			status_pesanan?: string;
+			kurir?: string;
+			no_resi?: string | null;
+			produk: ProdukInput[];
+		} = body;
 
-		const formData = await request.formData();
+		// Validasi input
+		if (!nama_pelanggan || !nomor_telpon || !alamat || !produk || produk.length === 0) {
+			return NextResponse.json(
+				{ message: 'Data tidak lengkap. Pastikan nama, nomor telpon, alamat, dan produk terisi.' },
+				{ status: 400 }
+			);
+		}
 
-		const nama_pelanggan = formData.get('nama_pelanggan') as string;
-		const id_produk = formData.get('id_produk') ? parseInt(formData.get('id_produk') as string) : null;
-		const nomor_telpon = formData.get('nomor_telpon') as string;
-		const email = formData.get('email') as string;
-		const alamat = formData.get('alamat') as string;
-		const status_pesanan = (formData.get('status_pesanan') as string) || 'Pending';
-		const kurir = (formData.get('kurir') as string) || 'Lainnya';
-		const no_resi = (formData.get('no_resi') as string) || null;
-
+		// Simpan ke tabel pesanan dulu
 		const [result] = await db.execute<ResultSetHeader>(
-			`INSERT INTO Pesanan 
-			 (nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi) 
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi]
+			`INSERT INTO pesanan (nama_pelanggan, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[nama_pelanggan, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi]
 		);
 
-		return NextResponse.json({ message: 'Pesanan berhasil ditambahkan', id: result.insertId }, { status: 201 });
+		const id_pesanan = result.insertId;
+
+		// Simpan detail produk
+		let total_harga = 0;
+		for (const item of produk) {
+			const subtotal = item.harga * item.jumlah;
+			total_harga += subtotal;
+
+			await db.execute(
+				`INSERT INTO detail_pesanan (id_pesanan, id_produk, jumlah, subtotal)
+				 VALUES (?, ?, ?, ?)`,
+				[id_pesanan, item.id_produk, item.jumlah, subtotal]
+			);
+		}
+
+		// Update total harga di tabel pesanan
+		await db.execute(`UPDATE pesanan SET total_harga = ? WHERE id_pesanan = ?`, [total_harga, id_pesanan]);
+
+		return NextResponse.json({ message: 'Pesanan berhasil dibuat', id_pesanan, total_harga }, { status: 201 });
 	} catch (error) {
 		console.error('Error creating pesanan:', error);
 		return NextResponse.json({ message: 'Gagal menambahkan pesanan' }, { status: 500 });
@@ -160,61 +278,78 @@ export async function POST(request: NextRequest) {
 }
 
 /* ==========================================================
-   PUT — Update pesanan (Admin Only)
+   PATCH — Update status pesanan (Admin Only)
    ========================================================== */
-export async function PUT(request: NextRequest) {
+export async function PATCH(request: NextRequest) {
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) return authCheck.response;
 
 	try {
-		console.log('Updating pesanan...');
-
-		const formData = await request.formData();
-
-		const id_pesanan = parseInt(formData.get('id_pesanan') as string);
-		const nama_pelanggan = formData.get('nama_pelanggan') as string;
-		const id_produk = formData.get('id_produk') ? parseInt(formData.get('id_produk') as string) : null;
-		const nomor_telpon = formData.get('nomor_telpon') as string;
-		const email = formData.get('email') as string;
-		const alamat = formData.get('alamat') as string;
-		const status_pesanan = (formData.get('status_pesanan') as string) || 'Pending';
-		const kurir = (formData.get('kurir') as string) || 'Lainnya';
-		const no_resi = (formData.get('no_resi') as string) || null;
-
-		await db.execute<ResultSetHeader>(
-			`UPDATE Pesanan 
-			 SET nama_pelanggan=?, id_produk=?, nomor_telpon=?, email=?, alamat=?, status_pesanan=?, kurir=?, no_resi=? 
-			 WHERE id_pesanan=?`,
-			[nama_pelanggan, id_produk, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi, id_pesanan]
-		);
-
-		return NextResponse.json({ message: 'Pesanan berhasil diperbarui' }, { status: 200 });
-	} catch (error) {
-		console.error('Error updating pesanan:', error);
-		return NextResponse.json({ message: 'Gagal memperbarui pesanan' }, { status: 500 });
-	}
-}
-
-/* ==========================================================
-   DELETE — Hapus pesanan (Admin Only)
-   ========================================================== */
-export async function DELETE(request: NextRequest) {
-	const authCheck = await checkAdminAuth(request);
-	if (!authCheck.authenticated) return authCheck.response;
-
-	try {
-		const { searchParams } = new URL(request.url);
-		const id_pesanan = searchParams.get('id_pesanan');
+		const body = await request.json();
+		const {
+			id_pesanan,
+			status_pesanan,
+			no_resi,
+			kurir
+		}: {
+			id_pesanan: number;
+			status_pesanan?: string;
+			no_resi?: string | null;
+			kurir?: string;
+		} = body;
 
 		if (!id_pesanan) {
-			return NextResponse.json({ message: 'ID pesanan wajib diisi' }, { status: 400 });
+			return NextResponse.json({ message: 'ID pesanan tidak boleh kosong' }, { status: 400 });
 		}
 
-		await db.execute<ResultSetHeader>('DELETE FROM Pesanan WHERE id_pesanan = ?', [id_pesanan]);
+		// Validasi status pesanan
+		const validStatuses = ['Pending', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'];
+		if (status_pesanan && !validStatuses.includes(status_pesanan)) {
+			return NextResponse.json(
+				{ message: `Status tidak valid. Status yang diperbolehkan: ${validStatuses.join(', ')}` },
+				{ status: 400 }
+			);
+		}
 
-		return NextResponse.json({ message: 'Pesanan berhasil dihapus' }, { status: 200 });
+		// Cek apakah pesanan ada
+		const [rows] = await db.execute<Pesanan[]>('SELECT * FROM pesanan WHERE id_pesanan = ?', [id_pesanan]);
+
+		if (rows.length === 0) {
+			return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
+		}
+
+		// Build dynamic update query
+		const updates: string[] = [];
+		const params: QueryParam[] = [];
+
+		if (status_pesanan) {
+			updates.push('status_pesanan = ?');
+			params.push(status_pesanan);
+		}
+
+		if (no_resi !== undefined) {
+			updates.push('no_resi = ?');
+			params.push(no_resi);
+		}
+
+		if (kurir) {
+			updates.push('kurir = ?');
+			params.push(kurir);
+		}
+
+		if (updates.length === 0) {
+			return NextResponse.json({ message: 'Tidak ada data yang diupdate' }, { status: 400 });
+		}
+
+		updates.push('updated_at = NOW()');
+		params.push(id_pesanan);
+
+		const query = `UPDATE pesanan SET ${updates.join(', ')} WHERE id_pesanan = ?`;
+		await db.execute(query, params);
+
+		return NextResponse.json({ message: 'Status pesanan berhasil diupdate' }, { status: 200 });
 	} catch (error) {
-		console.error('Error deleting pesanan:', error);
-		return NextResponse.json({ message: 'Gagal menghapus pesanan' }, { status: 500 });
+		console.error('Error updating pesanan:', error);
+		return NextResponse.json({ message: 'Gagal mengupdate status pesanan' }, { status: 500 });
 	}
 }

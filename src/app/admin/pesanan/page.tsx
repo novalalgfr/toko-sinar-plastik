@@ -3,46 +3,70 @@
 import * as React from 'react';
 import { DataTable, createSortableHeader } from '@/components/custom/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Image from 'next/image';
 import { Row } from '@tanstack/react-table';
 
-type Pesanan = {
-	name: string;
-	product: string;
-	telp: number;
-	email: string;
-	address: string;
-	date: string;
-	status?: string;
-	image: string;
-};
+interface ProdukItem {
+	id_produk: number;
+	nama_produk: string;
+	jumlah: number;
+	subtotal: number; // Ubah dari number ke number (konsisten)
+}
+
+interface Pesanan {
+	id_pesanan: number;
+	nama_pelanggan: string;
+	nomor_telpon: string;
+	email: string | null;
+	alamat: string;
+	tanggal_pesanan: string; // Ubah dari Date ke string
+	status_pesanan: string; // Konsisten dengan nama property
+	kurir: string;
+	no_resi: string | null;
+	total_harga?: number;
+	created_at: string; // Ubah dari Date ke string
+	updated_at: string; // Ubah dari Date ke string
+	produk?: ProdukItem[];
+}
 
 const productsData: Pesanan[] = [
 	{
-		name: 'Aya',
-		product: 'Golden Fill',
-		telp: 628123456789,
+		id_pesanan: 7,
+		nama_pelanggan: 'Aya',
+		nomor_telpon: '628123456789',
 		email: 'aya@example.com',
-		address: 'Jl. Merdeka No. 45, Jakarta',
-		date: '2025-10-19',
-		image: 'https://placehold.co/600x400/png'
-	},
-	{
-		name: 'Eja',
-		product: 'Pisang Goreng Madu',
-		telp: 628987654321,
-		email: 'eja@example.com',
-		address: 'Jl. Anggrek Raya No. 12, Bandung',
-		date: '2025-10-18',
-		image: 'https://placehold.co/600x400/png'
+		alamat: 'Jl. Merdeka No. 45',
+		total_harga: 152000,
+		tanggal_pesanan: '2025-10-20T04:50:28.000Z',
+		status_pesanan: 'Pending', // Ubah dari status_pemesanan
+		kurir: '',
+		no_resi: null,
+		created_at: '2025-10-20T04:50:28.000Z',
+		updated_at: '2025-10-20T04:55:37.000Z',
+		produk: [
+			{
+				id_produk: 20,
+				nama_produk: 'Golden Fill Coklat',
+				jumlah: 2,
+				subtotal: 100000 // Ubah dari string ke number
+			},
+			{
+				id_produk: 21,
+				nama_produk: 'Golden Fill Strawberry',
+				jumlah: 1,
+				subtotal: 52000 // Ubah dari string ke number
+			}
+		]
 	}
 ];
 
 export default function PesananPage() {
 	const [products, setProducts] = React.useState<Pesanan[]>(productsData);
 
-	const handleStatusChange = (name: string, newStatus: string) => {
-		setProducts((prev) => prev.map((item) => (item.name === name ? { ...item, status: newStatus } : item)));
+	// Ubah parameter dari name (string) ke idPesanan (number)
+	const handleStatusChange = (idPesanan: number, newStatus: string) => {
+		setProducts((prev) =>
+			prev.map((item) => (item.id_pesanan === idPesanan ? { ...item, status_pesanan: newStatus } : item))
+		);
 	};
 
 	const columns = [
@@ -52,48 +76,109 @@ export default function PesananPage() {
 			cell: ({ row }: { row: Row<Pesanan> }) => <span>{row.index + 1}.</span>
 		},
 		{
-			accessorKey: 'image',
-			header: 'Gambar Produk',
-			cell: ({ getValue }: { getValue: () => unknown }) => (
-				<Image
-					src={String(getValue() ?? '')}
-					alt="Produk"
-					width={64}
-					height={64}
-					className="w-16 h-16 object-cover rounded border"
-				/>
+			id: 'produk',
+			header: 'Produk',
+			cell: ({ row }: { row: { original: Pesanan } }) => (
+				<div className="space-y-1.5">
+					{row.original.produk?.map((item, index) => (
+						<div
+							key={index}
+							className="rounded-md bg-muted/50 p-2"
+						>
+							<div className="font-medium text-sm mb-0.5">{item.nama_produk}</div>
+							<div className="text-xs text-muted-foreground">
+								{item.jumlah}× • Rp {Number(item.subtotal).toLocaleString('id-ID')}
+							</div>
+						</div>
+					))}
+				</div>
 			)
 		},
-		{ accessorKey: 'product', header: 'Nama Produk' },
-		{ accessorKey: 'name', header: 'Nama Pelanggan' },
-		{ accessorKey: 'telp', header: 'Nomor Telepon' },
-		{ accessorKey: 'email', header: 'Email' },
-		{ accessorKey: 'address', header: 'Alamat' },
-		{ accessorKey: 'date', header: createSortableHeader<Pesanan>('Tanggal Pesanan') },
 		{
-			accessorKey: 'status',
+			accessorKey: 'nama_pelanggan',
+			header: 'Nama Pelanggan'
+		},
+		{
+			accessorKey: 'nomor_telpon',
+			header: 'Nomor Telepon'
+		},
+		{
+			accessorKey: 'email',
+			header: 'Email'
+		},
+		{
+			accessorKey: 'alamat',
+			header: 'Alamat'
+		},
+		{
+			accessorKey: 'total_harga',
+			header: 'Total Harga',
+			cell: ({ getValue }: { getValue: () => unknown }) => (
+				<span>Rp {Number(getValue()).toLocaleString('id-ID')}</span>
+			)
+		},
+		{
+			accessorKey: 'tanggal_pesanan',
+			header: createSortableHeader<Pesanan>('Tanggal Pesanan'),
+			cell: ({ getValue }: { getValue: () => unknown }) => (
+				<span>{new Date(String(getValue())).toLocaleDateString('id-ID')}</span>
+			)
+		},
+		{
+			accessorKey: 'status_pesanan',
 			header: 'Status Pesanan',
 			cell: ({ row }: { row: { original: Pesanan } }) => {
-				const currentStatus = row.original.status;
-				const name = row.original.name;
+				const currentStatus = row.original.status_pesanan;
+				const idPesanan = row.original.id_pesanan;
 
 				return (
 					<Select
 						value={currentStatus ?? undefined}
-						onValueChange={(value) => handleStatusChange(name, value)}
+						onValueChange={(value) => handleStatusChange(idPesanan, value)}
 					>
-						<SelectTrigger className="w-[200px]">
+						<SelectTrigger className="w-[200px] cursor-pointer">
 							<SelectValue
 								placeholder="Pilih status"
 								className={!currentStatus ? 'text-muted-foreground' : ''}
 							/>
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="Menunggu Pembayaran">Menunggu Pembayaran</SelectItem>
-							<SelectItem value="Pembayaran Dikonfirmasi">Pembayaran Dikonfirmasi</SelectItem>
-							<SelectItem value="Barang Dikemas">Barang Dikemas</SelectItem>
-							<SelectItem value="Dalam Pengiriman">Dalam Pengiriman</SelectItem>
-							<SelectItem value="Barang Diterima">Barang Diterima</SelectItem>
+							<SelectItem
+								value="Pending"
+								className="cursor-pointer"
+							>
+								Pending
+							</SelectItem>
+							<SelectItem
+								value="Menunggu Pembayaran"
+								className="cursor-pointer"
+							>
+								Menunggu Pembayaran
+							</SelectItem>
+							<SelectItem
+								value="Pembayaran Dikonfirmasi"
+								className="cursor-pointer"
+							>
+								Pembayaran Dikonfirmasi
+							</SelectItem>
+							<SelectItem
+								value="Barang Dikemas"
+								className="cursor-pointer"
+							>
+								Barang Dikemas
+							</SelectItem>
+							<SelectItem
+								value="Dalam Pengiriman"
+								className="cursor-pointer"
+							>
+								Dalam Pengiriman
+							</SelectItem>
+							<SelectItem
+								value="Barang Diterima"
+								className="cursor-pointer"
+							>
+								Barang Diterima
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				);
@@ -103,11 +188,11 @@ export default function PesananPage() {
 
 	return (
 		<section className="p-4 bg-white rounded-lg shadow">
-			<h1 className="text-2xl font-bold mb-4">Pesanan</h1>
+			{/* <h1 className="text-2xl font-bold mb-4">Pesanan</h1> */}
 			<DataTable
 				columns={columns}
 				data={products}
-				searchKey="name"
+				searchKey="nama_pelanggan" // Ubah dari "name" ke "nama_pelanggan"
 				searchPlaceholder="Cari nama pelanggan..."
 				showColumnToggle={false}
 			/>
