@@ -30,7 +30,7 @@ export default function ProductPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col items-center py-8">
+		<>
 			{/* Wrapper utama biar sejajar */}
 			<div className="w-full container mx-auto">
 				{/* Search & Filter */}
@@ -70,6 +70,6 @@ export default function ProductPage() {
 					))}
 				</div>
 			</div>
-		</div>
+		</>
 	);
 }
