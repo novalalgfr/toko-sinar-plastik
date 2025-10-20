@@ -381,7 +381,7 @@ export default function CheckoutPage() {
 									<Button
 										onClick={handleNextStep}
 										disabled={!canProceedFromStep1}
-										className="w-full mt-6"
+										className="w-full mt-6 cursor-pointer"
 									>
 										Lanjutkan
 									</Button>
@@ -430,7 +430,7 @@ export default function CheckoutPage() {
 											<Button
 												onClick={() => setCurrentStep(1)}
 												variant="outline"
-												className="flex-1"
+												className="flex-1 cursor-pointer"
 											>
 												Kembali
 											</Button>
@@ -439,7 +439,7 @@ export default function CheckoutPage() {
 													setSelectedAddress(addresses[0].id);
 												}}
 												disabled={loadingShipping}
-												className="flex-1"
+												className="flex-1 cursor-pointer"
 											>
 												{loadingShipping ? (
 													<>
@@ -549,7 +549,7 @@ export default function CheckoutPage() {
 												<Button
 													onClick={handlePayment}
 													disabled={!selectedShipping || loadingPayment}
-													className="w-full py-6 text-lg"
+													className="w-full cursor-pointer"
 												>
 													{loadingPayment ? (
 														<>
@@ -577,7 +577,7 @@ export default function CheckoutPage() {
 												<Button
 													onClick={() => setCurrentStep(2)}
 													variant="outline"
-													className="flex-1"
+													className="flex-1 cursor-pointer"
 												>
 													Kembali
 												</Button>
@@ -607,7 +607,7 @@ export default function CheckoutPage() {
 									</div>
 								</div>
 								<Button
-									className="w-full py-6 text-lg"
+									className="w-full cursor-pointer"
 									onClick={handlePayment}
 									disabled={loadingPayment}
 								>

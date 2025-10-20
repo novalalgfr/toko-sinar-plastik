@@ -114,14 +114,18 @@ export function Navbar() {
 									<DropdownMenuTrigger asChild>
 										<button
 											className={`rounded-full p-3 cursor-pointer border hover:bg-gray-100 ${
-												pathname === '/setting'
+												pathname === '/setting' || pathname === '/riwayat-pesanan'
 													? 'bg-slate-900 border-0 hover:bg-slate-800'
 													: 'border-gray-300'
 											}`}
 										>
 											<User
 												size={20}
-												className={pathname === '/setting' ? 'text-white' : ''}
+												className={
+													pathname === '/setting' || pathname === '/riwayat-pesanan'
+														? 'text-white'
+														: ''
+												}
 											/>
 										</button>
 									</DropdownMenuTrigger>
