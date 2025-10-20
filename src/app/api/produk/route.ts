@@ -60,19 +60,58 @@ async function checkAdminAuth(request: NextRequest) {
 function addImageUrl(data: Produk[], baseUrl: string) {
 	return data.map((item) => ({
 		...item,
-		gambar_url: item.gambar && item.gambar !== '' ? `${baseUrl}${item.gambar}` : null
+		gambar_url: item.gambar && item.gambar !== '' ? `${baseUrl}/${item.gambar}` : null
 	}));
+}
+
+// Fungsi untuk menambahkan URL gambar untuk single product
+function addImageUrlSingle(item: Produk, baseUrl: string) {
+	return {
+		...item,
+		gambar_url: item.gambar && item.gambar !== '' ? `${baseUrl}/${item.gambar}` : null
+	};
 }
 
 /* ==========================================================
    GET — Menampilkan produk dengan pagination dan pencarian
+   ATAU detail produk berdasarkan ID
    (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
-		console.log('Fetching produk data...');
-
 		const { searchParams } = new URL(request.url);
+		const id = searchParams.get('id');
+
+		// CASE 1: Jika ada parameter ID, return detail produk
+		if (id) {
+			console.log('Fetching produk with ID:', id);
+
+			const productId = parseInt(id);
+			if (isNaN(productId)) {
+				return NextResponse.json({ message: 'ID produk tidak valid' }, { status: 400 });
+			}
+
+			const [rows] = await db.execute<Produk[]>('SELECT * FROM Produk WHERE id_produk = ?', [productId]);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Produk tidak ditemukan' }, { status: 404 });
+			}
+
+			const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+			const productWithUrl = addImageUrlSingle(rows[0], baseUrl);
+
+			return NextResponse.json(
+				{
+					success: true,
+					data: productWithUrl
+				},
+				{ status: 200 }
+			);
+		}
+
+		// CASE 2: Jika tidak ada ID, return list produk dengan pagination
+		console.log('Fetching produk list...');
+
 		const page = parseInt(searchParams.get('page') || '1');
 		const limit = parseInt(searchParams.get('limit') || '10');
 		const search = searchParams.get('search') || '';

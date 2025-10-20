@@ -39,7 +39,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 							<Menu size={24} />
 						</button>
 					</div>
-					<div className="p-6">{children}</div>
+					<div className="p-6">
+						{children}
+						<Toaster />
+					</div>
 				</main>
 			</div>
 		);

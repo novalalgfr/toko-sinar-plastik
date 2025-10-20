@@ -64,10 +64,10 @@ async function checkAdminAuth(request: NextRequest) {
 function addImageUrl(data: Beranda[], baseUrl: string) {
 	return data.map((item) => ({
 		...item,
-		gambar_utama_url: item.gambar_utama && item.gambar_utama !== '' ? `${baseUrl}${item.gambar_utama}` : null,
-		gambar_1_url: item.gambar_1 && item.gambar_1 !== '' ? `${baseUrl}${item.gambar_1}` : null,
-		gambar_2_url: item.gambar_2 && item.gambar_2 !== '' ? `${baseUrl}${item.gambar_2}` : null,
-		gambar_ct_url: item.gambar_ct && item.gambar_ct !== '' ? `${baseUrl}${item.gambar_ct}` : null
+		gambar_utama_url: item.gambar_utama && item.gambar_utama !== '' ? `${baseUrl}/${item.gambar_utama}` : null,
+		gambar_1_url: item.gambar_1 && item.gambar_1 !== '' ? `${baseUrl}/${item.gambar_1}` : null,
+		gambar_2_url: item.gambar_2 && item.gambar_2 !== '' ? `${baseUrl}/${item.gambar_2}` : null,
+		gambar_ct_url: item.gambar_ct && item.gambar_ct !== '' ? `${baseUrl}/${item.gambar_ct}` : null
 	}));
 }
 

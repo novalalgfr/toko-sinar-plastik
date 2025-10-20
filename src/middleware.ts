@@ -10,7 +10,7 @@ export default withAuth(
 		// Redirect jika sudah login dan akses /login
 		if (pathname === '/login' && token) {
 			if (token.role === 'admin') {
-				return NextResponse.redirect(new URL('/admin/example', req.url));
+				return NextResponse.redirect(new URL('/admin/dashboard', req.url));
 			} else {
 				return NextResponse.redirect(new URL('/', req.url));
 			}

@@ -50,7 +50,7 @@ export function DataTable<TData, TValue>({
 	showPagination = true,
 	pageSize = 10,
 	className = '',
-	emptyMessage = 'No data found.',
+	emptyMessage = 'Tidak ada data.',
 	onAdd,
 	addLabel
 }: DataTableProps<TData, TValue>) {
@@ -84,7 +84,7 @@ export function DataTable<TData, TValue>({
 		<div className={`w-full max-w-sm sm:max-w-none ${className}`}>
 			{/* Toolbar */}
 			{(showSearch || showColumnToggle || onAdd) && (
-				<div className="flex items-center justify-between py-4">
+				<div className="flex items-center justify-between pb-4">
 					<div className="flex items-center space-x-2">
 						{/* Search Input */}
 						{showSearch && searchKey && (
@@ -179,7 +179,10 @@ export function DataTable<TData, TValue>({
 									data-state={row.getIsSelected() && 'selected'}
 								>
 									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id}>
+										<TableCell
+											className="whitespace-normal break-words"
+											key={cell.id}
+										>
 											{flexRender(cell.column.columnDef.cell, cell.getContext())}
 										</TableCell>
 									))}

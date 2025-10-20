@@ -207,7 +207,7 @@ export default function SettingPage() {
 						<CardTitle>Pengaturan Akun</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="name">Nama</Label>
 							<Input
 								id="name"
@@ -216,7 +216,7 @@ export default function SettingPage() {
 								disabled
 							/>
 						</div>
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="email">Email</Label>
 							<Input
 								id="email"
@@ -226,7 +226,7 @@ export default function SettingPage() {
 							/>
 						</div>
 
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="alamat">Alamat Lengkap</Label>
 							<Input
 								id="alamat"
@@ -249,7 +249,7 @@ export default function SettingPage() {
 						</div>
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-1">
+							<div className="space-y-2">
 								<Label htmlFor="alamatPeta">Alamat Peta</Label>
 								<Input
 									id="alamatPeta"
@@ -259,7 +259,7 @@ export default function SettingPage() {
 									onChange={handleTextChange('alamatPeta')}
 								/>
 							</div>
-							<div className="space-y-1">
+							<div className="space-y-2">
 								<Label htmlFor="rt_rw">RT/RW</Label>
 								<Input
 									id="rt_rw"
@@ -271,7 +271,7 @@ export default function SettingPage() {
 							</div>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-1">
+							<div className="space-y-2">
 								<Label htmlFor="kelurahan">Kelurahan / Desa</Label>
 								<Input
 									id="kelurahan"
@@ -281,7 +281,7 @@ export default function SettingPage() {
 									onChange={handleTextChange('kelurahan')}
 								/>
 							</div>
-							<div className="space-y-1">
+							<div className="space-y-2">
 								<Label htmlFor="kecamatan">Kecamatan</Label>
 								<Input
 									id="kecamatan"
@@ -293,7 +293,7 @@ export default function SettingPage() {
 							</div>
 						</div>
 
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="nomor_telepon">Nomor Telepon</Label>
 							<Input
 								id="nomor_telepon"
@@ -309,7 +309,7 @@ export default function SettingPage() {
 
 						<hr className="my-4" />
 
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="current_password">Password Saat Ini</Label>
 							<Input
 								id="current_password"
@@ -318,7 +318,7 @@ export default function SettingPage() {
 								onChange={handleTextChange('current_password')}
 							/>
 						</div>
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="new_password">Password Baru</Label>
 							<Input
 								id="new_password"
@@ -327,7 +327,7 @@ export default function SettingPage() {
 								onChange={handleTextChange('new_password')}
 							/>
 						</div>
-						<div className="space-y-1">
+						<div className="space-y-2">
 							<Label htmlFor="confirm_password">Konfirmasi Password Baru</Label>
 							<Input
 								id="confirm_password"
