@@ -28,7 +28,7 @@ const columns: ColumnDef<CategoryRow>[] = [
 	},
 	{
 		accessorKey: 'image',
-		header: 'Gambar Kategori',
+		header: 'Gambar',
 		cell: ({ getValue }) => (
 			<Image
 				src={String(getValue() ?? '')}
