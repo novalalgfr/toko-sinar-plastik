@@ -6,17 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Truck, Store, CheckCircle2, Clock, AlertCircle, Loader2, XCircle } from 'lucide-react';
+import { Truck, Store, CheckCircle2, Clock, AlertCircle, Loader2, XCircle, MapPin, Phone } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface Address {
-	id: number;
-	name: string;
-	address: string;
-	phone: string;
-	isDefault: boolean;
-	cityId: number;
-	postalCode: string;
-	pinPoint: string;
+interface UserAddress {
+	alamat: string;
+	alamat_peta: string;
+	rt: string;
+	rw: string;
+	kelurahan: string;
+	kecamatan: string;
+	nomor_telepon: string;
+	latitude: number;
+	longitude: number;
 }
 
 interface ShippingOption {
@@ -69,20 +71,8 @@ export default function CheckoutPage() {
 
 	const [currentStep, setCurrentStep] = useState<number>(1);
 	const [fulfillmentType, setFulfillmentType] = useState<string>('delivery');
-	const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
-
-	const [addresses] = useState<Address[]>([
-		{
-			id: 1,
-			name: 'Rumah',
-			address: 'Jl. Contoh No. 123, Purbalingga',
-			phone: '081234567890',
-			isDefault: true,
-			cityId: 46116,
-			postalCode: '53371',
-			pinPoint: '-7.30585,109.36814'
-		}
-	]);
+	const [userAddress, setUserAddress] = useState<UserAddress | null>(null);
+	const [loadingAddress, setLoadingAddress] = useState<boolean>(true);
 
 	const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
 	const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
@@ -100,16 +90,65 @@ export default function CheckoutPage() {
 
 	// Validasi step
 	const canProceedFromStep1 = fulfillmentType;
-	const canProceedFromStep2 = fulfillmentType === 'store' || (fulfillmentType === 'delivery' && selectedAddress);
+	const canProceedFromStep2 = fulfillmentType === 'store' || (fulfillmentType === 'delivery' && userAddress);
 	const canProceedFromStep3 = fulfillmentType === 'store' || (fulfillmentType === 'delivery' && selectedShipping);
+
+	// Fetch user address from API
+	useEffect(() => {
+		const fetchUserAddress = async () => {
+			setLoadingAddress(true);
+			try {
+				const res = await fetch('/api/user/profile');
+				if (!res.ok) throw new Error('Gagal memuat alamat pengguna');
+
+				const data = await res.json();
+
+				// Set user address jika data lengkap
+				if (data.alamat && data.latitude && data.longitude) {
+					setUserAddress({
+						alamat: data.alamat || '',
+						alamat_peta: data.alamat_peta || '',
+						rt: data.rt || '',
+						rw: data.rw || '',
+						kelurahan: data.kelurahan || '',
+						kecamatan: data.kecamatan || '',
+						nomor_telepon: data.nomor_telepon || '',
+						latitude: parseFloat(data.latitude) || 0,
+						longitude: parseFloat(data.longitude) || 0
+					});
+				} else {
+					toast.error('Alamat belum lengkap. Silakan lengkapi profil Anda.', {
+						style: {
+							background: '#ef4444',
+							color: '#ffffff',
+							border: 'none'
+						}
+					});
+				}
+			} catch (error) {
+				console.error('Error fetching user address:', error);
+				toast.error('Gagal memuat alamat. Silakan coba lagi.', {
+					style: {
+						background: '#ef4444',
+						color: '#ffffff',
+						border: 'none'
+					}
+				});
+			} finally {
+				setLoadingAddress(false);
+			}
+		};
+
+		fetchUserAddress();
+	}, []);
 
 	// Fetch ongkir dari RajaOngkir ketika alamat dipilih
 	useEffect(() => {
-		if (selectedAddress && fulfillmentType === 'delivery' && currentStep === 2) {
+		if (userAddress && fulfillmentType === 'delivery' && currentStep === 2) {
 			fetchShippingCosts();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedAddress, fulfillmentType, currentStep]);
+	}, [userAddress, fulfillmentType, currentStep]);
 
 	const fetchShippingCosts = async () => {
 		setLoadingShipping(true);
@@ -118,11 +157,13 @@ export default function CheckoutPage() {
 		setShippingError(false);
 
 		try {
-			const address = addresses.find((a) => a.id === selectedAddress);
-
-			if (!address) {
+			if (!userAddress) {
 				throw new Error('Address not found');
 			}
+
+			// Note: Anda perlu mendapatkan cityId dari koordinat atau dari data tambahan
+			// Untuk sementara gunakan default atau tambahkan field cityId di database
+			const cityId = 46116; // Default cityId Purbalingga
 
 			const response = await fetch('/api/rajaongkir/calculate', {
 				method: 'POST',
@@ -131,11 +172,11 @@ export default function CheckoutPage() {
 				},
 				body: JSON.stringify({
 					shipper_destination_id: STORE_CONFIG.originDestinationId,
-					receiver_destination_id: address.cityId,
+					receiver_destination_id: cityId,
 					weight: totalWeight,
 					item_value: STORE_CONFIG.itemValue,
 					origin_pin_point: STORE_CONFIG.originPinPoint,
-					destination_pin_point: address.pinPoint
+					destination_pin_point: `${userAddress.latitude},${userAddress.longitude}`
 				})
 			});
 
@@ -169,8 +210,6 @@ export default function CheckoutPage() {
 		setLoadingPayment(true);
 
 		try {
-			const selectedAddr = addresses.find((a) => a.id === selectedAddress);
-
 			// Siapkan item details
 			const itemDetails = [
 				...cartItems.map((item) => ({
@@ -191,6 +230,17 @@ export default function CheckoutPage() {
 				});
 			}
 
+			// Format alamat lengkap
+			const fullAddress = userAddress
+				? `${userAddress.alamat}${
+						userAddress.rt || userAddress.rw
+							? `, RT ${userAddress.rt || '-'}/RW ${userAddress.rw || '-'}`
+							: ''
+				  }${userAddress.kelurahan ? `, ${userAddress.kelurahan}` : ''}${
+						userAddress.kecamatan ? `, ${userAddress.kecamatan}` : ''
+				  }`
+				: 'Alamat tidak tersedia';
+
 			// Siapkan data untuk Midtrans
 			const orderData = {
 				transaction_details: {
@@ -198,19 +248,19 @@ export default function CheckoutPage() {
 					gross_amount: total
 				},
 				customer_details: {
-					first_name: selectedAddr?.name || 'Customer',
-					phone: selectedAddr?.phone || '08123456789',
-					address: selectedAddr?.address || 'Purbalingga'
+					first_name: 'Customer',
+					phone: userAddress?.nomor_telepon || '08123456789',
+					address: fullAddress
 				},
 				item_details: itemDetails,
 				shipping_address:
-					fulfillmentType === 'delivery' && selectedAddr
+					fulfillmentType === 'delivery' && userAddress
 						? {
-								first_name: selectedAddr.name,
-								phone: selectedAddr.phone,
-								address: selectedAddr.address,
-								city: 'Purbalingga',
-								postal_code: selectedAddr.postalCode
+								first_name: 'Customer',
+								phone: userAddress.nomor_telepon,
+								address: fullAddress,
+								city: userAddress.kecamatan || 'Unknown',
+								postal_code: '00000'
 						  }
 						: null
 			};
@@ -301,6 +351,27 @@ export default function CheckoutPage() {
 		};
 	}, []);
 
+	// Format alamat untuk display
+	const getFormattedAddress = () => {
+		if (!userAddress) return '';
+
+		let address = userAddress.alamat;
+
+		if (userAddress.rt || userAddress.rw) {
+			address += `, RT ${userAddress.rt || '-'}/RW ${userAddress.rw || '-'}`;
+		}
+
+		if (userAddress.kelurahan) {
+			address += `, ${userAddress.kelurahan}`;
+		}
+
+		if (userAddress.kecamatan) {
+			address += `, ${userAddress.kecamatan}`;
+		}
+
+		return address;
+	};
+
 	return (
 		<div className="min-h-screen bg-gray-50 py-8">
 			<div className="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -390,7 +461,7 @@ export default function CheckoutPage() {
 						)}
 					</Card>
 
-					{/* Step 2: Alamat (Auto-selected karena cuma 1) */}
+					{/* Step 2: Alamat (Dari API) */}
 					{fulfillmentType === 'delivery' && (
 						<Card>
 							<CardHeader>
@@ -403,53 +474,103 @@ export default function CheckoutPage() {
 							</CardHeader>
 							{currentStep >= 2 && (
 								<CardContent>
-									<div className="space-y-3">
-										{addresses.map((addr) => (
-											<div
-												key={addr.id}
-												className="p-4 border rounded-lg bg-blue-50 border-blue-200"
-											>
-												<div className="flex items-center justify-between">
-													<div>
-														<div className="flex items-center gap-2">
-															<p className="font-medium">{addr.name}</p>
+									{loadingAddress ? (
+										<div className="flex flex-col items-center justify-center py-8">
+											<Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-3" />
+											<p className="text-sm text-gray-600">Memuat alamat...</p>
+										</div>
+									) : userAddress ? (
+										<>
+											<div className="space-y-3">
+												<div className="p-5 border rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+													<div className="flex items-start justify-between gap-4">
+														<div className="flex-1 min-w-0">
+															{/* Header */}
+															<div className="flex items-center gap-2 mb-3">
+																<h3 className="font-semibold text-gray-900">
+																	Alamat Pengiriman
+																</h3>
+															</div>
+
+															{/* Main Address */}
+															<div className="mb-3">
+																<p className="text-sm text-gray-800 leading-relaxed">
+																	{getFormattedAddress()}
+																</p>
+															</div>
+
+															{/* Map Address */}
+															{userAddress.alamat_peta && (
+																<div className="flex items-start gap-2.5 py-1 rounded-lg mb-2.5">
+																	<MapPin
+																		size={16}
+																		className="text-blue-600 flex-shrink-0 mt-0.5"
+																	/>
+																	<p className="text-sm font-medium text-gray-700">
+																		{userAddress.alamat_peta}
+																	</p>
+																</div>
+															)}
+
+															{/* Phone Number */}
+															{userAddress.nomor_telepon && (
+																<div className="flex items-center gap-2.5 py-1 rounded-lg">
+																	<Phone
+																		size={16}
+																		className="text-blue-600 flex-shrink-0"
+																	/>
+																	<p className="text-sm font-medium text-gray-700">
+																		{userAddress.nomor_telepon}
+																	</p>
+																</div>
+															)}
 														</div>
-														<p className="text-sm text-gray-600 mt-1">{addr.address}</p>
-														<p className="text-sm text-gray-500">{addr.phone}</p>
 													</div>
-													<CheckCircle2
-														className="text-blue-600"
-														size={24}
-													/>
 												</div>
 											</div>
-										))}
-									</div>
-									{currentStep === 2 && (
-										<div className="flex gap-3 mt-6">
-											<Button
-												onClick={() => setCurrentStep(1)}
-												variant="outline"
-												className="flex-1 cursor-pointer"
-											>
-												Kembali
-											</Button>
-											<Button
-												onClick={() => {
-													setSelectedAddress(addresses[0].id);
-												}}
-												disabled={loadingShipping}
-												className="flex-1 cursor-pointer"
-											>
-												{loadingShipping ? (
-													<>
-														<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-														Memuat...
-													</>
-												) : (
-													'Lanjutkan'
-												)}
-											</Button>
+											{currentStep === 2 && (
+												<div className="flex gap-3 mt-6">
+													<Button
+														onClick={() => setCurrentStep(1)}
+														variant="outline"
+														className="flex-1 cursor-pointer"
+													>
+														Kembali
+													</Button>
+													<Button
+														onClick={fetchShippingCosts}
+														disabled={loadingShipping}
+														className="flex-1 cursor-pointer"
+													>
+														{loadingShipping ? (
+															<>
+																<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+																Memuat...
+															</>
+														) : (
+															'Lanjutkan'
+														)}
+													</Button>
+												</div>
+											)}
+										</>
+									) : (
+										<div className="text-center py-8">
+											<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+												<AlertCircle className="mx-auto h-12 w-12 mb-3 text-yellow-500" />
+												<h3 className="font-semibold text-yellow-900 mb-2">
+													Alamat Belum Lengkap
+												</h3>
+												<p className="text-sm text-yellow-700 mb-4">
+													Silakan lengkapi alamat Anda di halaman Pengaturan terlebih dahulu.
+												</p>
+												<Button
+													onClick={() => (window.location.href = '/settings')}
+													className="cursor-pointer"
+												>
+													Lengkapi Alamat
+												</Button>
+											</div>
 										</div>
 									)}
 								</CardContent>

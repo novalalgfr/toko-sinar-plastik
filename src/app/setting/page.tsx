@@ -20,7 +20,8 @@ interface UserDisplayData {
 interface UpdateFormData {
 	alamat: string;
 	alamatPeta: string;
-	rt_rw: string;
+	rt: string;
+	rw: string;
 	kelurahan: string;
 	kecamatan: string;
 	nomor_telepon: string;
@@ -34,6 +35,8 @@ interface UpdateFormData {
 interface FormErrors {
 	nomor_telepon?: string;
 	confirm_password?: string;
+	rt?: string;
+	rw?: string;
 }
 
 const defaultCenter: L.LatLngTuple = [-6.2088, 106.8456];
@@ -43,7 +46,8 @@ export default function SettingPage() {
 	const [formData, setFormData] = useState<UpdateFormData>({
 		alamat: '',
 		alamatPeta: '',
-		rt_rw: '',
+		rt: '',
+		rw: '',
 		kelurahan: '',
 		kecamatan: '',
 		nomor_telepon: '',
@@ -88,6 +92,11 @@ export default function SettingPage() {
 				setFormData((prev) => ({
 					...prev,
 					alamat: data.alamat || '',
+					alamatPeta: data.alamat_peta || '',
+					rt: data.rt || '',
+					rw: data.rw || '',
+					kelurahan: data.kelurahan || '',
+					kecamatan: data.kecamatan || '',
 					nomor_telepon: data.nomor_telepon || '',
 					latitude: initialPosition[0],
 					longitude: initialPosition[1]
@@ -113,6 +122,9 @@ export default function SettingPage() {
 		if (field === 'nomor_telepon') {
 			value = value.replace(/[^0-9+]/g, '');
 		}
+		if (field === 'rt' || field === 'rw') {
+			value = value.replace(/[^0-9]/g, '');
+		}
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		if (errors[field as keyof FormErrors]) {
 			setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -124,11 +136,10 @@ export default function SettingPage() {
 	};
 
 	const handleAddressFound = (addressDetails: AddressDetails) => {
+		// Hanya update alamatPeta, field lain diisi manual
 		setFormData((prev) => ({
 			...prev,
-			alamatPeta: addressDetails.alamatPeta,
-			kelurahan: addressDetails.kelurahan,
-			kecamatan: addressDetails.kecamatan
+			alamatPeta: addressDetails.alamatPeta
 		}));
 	};
 
@@ -259,15 +270,31 @@ export default function SettingPage() {
 									onChange={handleTextChange('alamatPeta')}
 								/>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="rt_rw">RT/RW</Label>
-								<Input
-									id="rt_rw"
-									type="text"
-									placeholder="Contoh: 001/002"
-									value={formData.rt_rw}
-									onChange={handleTextChange('rt_rw')}
-								/>
+							<div className="grid grid-cols-2 gap-2">
+								<div className="space-y-2">
+									<Label htmlFor="rt">RT</Label>
+									<Input
+										id="rt"
+										type="text"
+										placeholder="001"
+										maxLength={3}
+										value={formData.rt}
+										onChange={handleTextChange('rt')}
+									/>
+									{errors.rt && <p className="text-sm text-red-600 pt-1">{errors.rt}</p>}
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="rw">RW</Label>
+									<Input
+										id="rw"
+										type="text"
+										placeholder="002"
+										maxLength={3}
+										value={formData.rw}
+										onChange={handleTextChange('rw')}
+									/>
+									{errors.rw && <p className="text-sm text-red-600 pt-1">{errors.rw}</p>}
+								</div>
 							</div>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -276,7 +303,7 @@ export default function SettingPage() {
 								<Input
 									id="kelurahan"
 									type="text"
-									placeholder="Terisi otomatis dari peta"
+									placeholder="Masukkan kelurahan/desa"
 									value={formData.kelurahan}
 									onChange={handleTextChange('kelurahan')}
 								/>
@@ -286,7 +313,7 @@ export default function SettingPage() {
 								<Input
 									id="kecamatan"
 									type="text"
-									placeholder="Terisi otomatis dari peta"
+									placeholder="Masukkan kecamatan"
 									value={formData.kecamatan}
 									onChange={handleTextChange('kecamatan')}
 								/>
