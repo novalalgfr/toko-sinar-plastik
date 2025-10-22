@@ -184,56 +184,56 @@ export default function ProductPage() {
 					)}
 
 					{/* Pagination */}
-					{pagination.totalPages > 1 && (
-						<div className="mt-10 flex justify-center">
-							<Pagination>
-								<PaginationContent>
-									{/* Tombol Sebelumnya */}
-									<PaginationItem>
-										<PaginationPrevious
-											onClick={() => {
-												if (pagination.currentPage > 1)
-													updateUrlParams(pagination.currentPage - 1, limitFromUrl);
-											}}
-											className={
-												pagination.currentPage === 1
-													? 'pointer-events-none opacity-50'
-													: 'cursor-pointer'
-											}
-										/>
-									</PaginationItem>
+					{/* {pagination.totalPages > 1 && ( */}
+					<div className="mt-10 flex justify-center">
+						<Pagination>
+							<PaginationContent>
+								{/* Tombol Sebelumnya */}
+								<PaginationItem>
+									<PaginationPrevious
+										onClick={() => {
+											if (pagination.currentPage > 1)
+												updateUrlParams(pagination.currentPage - 1, limitFromUrl);
+										}}
+										className={
+											pagination.currentPage === 1
+												? 'pointer-events-none opacity-50'
+												: 'cursor-pointer'
+										}
+									/>
+								</PaginationItem>
 
-									{/* Nomor halaman */}
-									{Array.from({ length: pagination.totalPages }, (_, i) => (
-										<PaginationItem key={i}>
-											<PaginationLink
-												isActive={pagination.currentPage === i + 1}
-												onClick={() => updateUrlParams(i + 1, limitFromUrl)}
-												className="cursor-pointer"
-											>
-												{i + 1}
-											</PaginationLink>
-										</PaginationItem>
-									))}
-
-									{/* Tombol Selanjutnya */}
-									<PaginationItem>
-										<PaginationNext
-											onClick={() => {
-												if (pagination.currentPage < pagination.totalPages)
-													updateUrlParams(pagination.currentPage + 1, limitFromUrl);
-											}}
-											className={
-												pagination.currentPage === pagination.totalPages
-													? 'pointer-events-none opacity-50'
-													: 'cursor-pointer'
-											}
-										/>
+								{/* Nomor halaman */}
+								{Array.from({ length: pagination.totalPages }, (_, i) => (
+									<PaginationItem key={i}>
+										<PaginationLink
+											isActive={pagination.currentPage === i + 1}
+											onClick={() => updateUrlParams(i + 1, limitFromUrl)}
+											className="cursor-pointer"
+										>
+											{i + 1}
+										</PaginationLink>
 									</PaginationItem>
-								</PaginationContent>
-							</Pagination>
-						</div>
-					)}
+								))}
+
+								{/* Tombol Selanjutnya */}
+								<PaginationItem>
+									<PaginationNext
+										onClick={() => {
+											if (pagination.currentPage < pagination.totalPages)
+												updateUrlParams(pagination.currentPage + 1, limitFromUrl);
+										}}
+										className={
+											pagination.currentPage === pagination.totalPages
+												? 'pointer-events-none opacity-50'
+												: 'cursor-pointer'
+										}
+									/>
+								</PaginationItem>
+							</PaginationContent>
+						</Pagination>
+					</div>
+					{/* )} */}
 				</>
 			)}
 		</section>
