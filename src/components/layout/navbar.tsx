@@ -96,17 +96,17 @@ export function Navbar() {
 
 						{status === 'authenticated' && (
 							<div className="flex items-center gap-4">
-								<Link href="/pembayaran">
+								<Link href="/keranjang">
 									<button
 										className={`rounded-full p-3 cursor-pointer border hover:bg-gray-100 ${
-											pathname === '/pembayaran'
+											pathname === '/keranjang'
 												? 'bg-slate-900 border-0 hover:bg-slate-800'
 												: 'border-gray-300'
 										}`}
 									>
 										<ShoppingCart
 											size={20}
-											className={pathname === '/pembayaran' ? 'text-white' : ''}
+											className={pathname === '/keranjang' ? 'text-white' : ''}
 										/>
 									</button>
 								</Link>
