@@ -74,8 +74,9 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get('id');
+		const nama = searchParams.get('nama'); // 👈 tambahkan baris ini
 
-		// CASE 1: Jika ada parameter ID, return detail kategori
+		// CASE 1: Jika ada parameter ID
 		if (id) {
 			console.log('📥 Mengambil kategori dengan ID:', id);
 
@@ -84,7 +85,10 @@ export async function GET(request: NextRequest) {
 				return NextResponse.json({ message: 'ID kategori tidak valid' }, { status: 400 });
 			}
 
-			const [rows] = await db.execute<Kategori[]>('SELECT * FROM kategori WHERE id_kategori = ?', [categoryId]);
+			const [rows] = await db.execute<Kategori[]>(
+				'SELECT * FROM kategori WHERE id_kategori = ?',
+				[categoryId]
+			);
 
 			if (rows.length === 0) {
 				return NextResponse.json({ message: 'Kategori tidak ditemukan' }, { status: 404 });
@@ -93,16 +97,29 @@ export async function GET(request: NextRequest) {
 			const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 			const categoryWithUrl = addImageUrlSingle(rows[0], baseUrl);
 
-			return NextResponse.json(
-				{
-					success: true,
-					data: categoryWithUrl
-				},
-				{ status: 200 }
-			);
+			return NextResponse.json({ success: true, data: categoryWithUrl }, { status: 200 });
 		}
 
-		// CASE 2: Jika tidak ada ID, return list kategori dengan pagination
+		// CASE 2: Jika ada parameter nama (by nama)
+		if (nama) {
+			console.log('📥 Mengambil kategori dengan nama:', nama);
+
+			const [rows] = await db.execute<Kategori[]>(
+				'SELECT * FROM kategori WHERE nama_kategori = ?',
+				[nama]
+			);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Kategori tidak ditemukan' }, { status: 404 });
+			}
+
+			const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+			const categoryWithUrl = addImageUrlSingle(rows[0], baseUrl);
+
+			return NextResponse.json({ success: true, data: categoryWithUrl }, { status: 200 });
+		}
+
+		// CASE 3: Jika tidak ada ID atau nama → tampilkan list (pagination)
 		console.log('📥 Mengambil data kategori dengan pagination...');
 
 		const page = parseInt(searchParams.get('page') || '1');
@@ -167,6 +184,7 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json({ message: 'Koneksi database gagal' }, { status: 500 });
 	}
 }
+
 
 /* =========================================================
    🟡 POST: Tambah kategori baru (ADMIN ONLY)

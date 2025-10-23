@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get('id');
+		const nama = searchParams.get('nama'); // 🔹 Tambahan parameter nama
 
 		// CASE 1: Jika ada parameter ID, return detail produk
 		if (id) {
@@ -109,7 +110,32 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		// CASE 2: Jika tidak ada ID, return list produk dengan pagination
+		// 🔹 CASE 2: Jika ada parameter nama, return produk berdasarkan nama
+		if (nama) {
+			console.log('Fetching produk with nama:', nama);
+
+			const [rows] = await db.execute<Produk[]>(
+				'SELECT * FROM Produk WHERE nama_produk LIKE ?',
+				[`%${nama}%`]
+			);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Produk tidak ditemukan' }, { status: 404 });
+			}
+
+			const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+			const dataWithUrls = addImageUrl(rows, baseUrl);
+
+			return NextResponse.json(
+				{
+					success: true,
+					data: dataWithUrls
+				},
+				{ status: 200 }
+			);
+		}
+
+		// CASE 3: Jika tidak ada ID atau nama, return list produk dengan pagination
 		console.log('Fetching produk list...');
 
 		const page = parseInt(searchParams.get('page') || '1');
@@ -174,6 +200,7 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json({ message: 'Failed to fetch produk' }, { status: 500 });
 	}
 }
+
 
 /* ==========================================================
    POST — Menambahkan produk baru + upload gambar

@@ -74,17 +74,21 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get('id');
+		const nama = searchParams.get('nama'); // 👈 Tambah parameter nama pelanggan
 
-		// CASE 1: Jika ada parameter ID, return detail pesanan
+		// CASE 1: Jika ada parameter ID (by id_pesanan)
 		if (id) {
-			console.log('Fetching pesanan with ID:', id);
+			console.log('📥 Mengambil pesanan dengan ID:', id);
 
 			const pesananId = parseInt(id);
 			if (isNaN(pesananId)) {
 				return NextResponse.json({ message: 'ID pesanan tidak valid' }, { status: 400 });
 			}
 
-			const [rows] = await db.execute<Pesanan[]>('SELECT * FROM pesanan WHERE id_pesanan = ?', [pesananId]);
+			const [rows] = await db.execute<Pesanan[]>(
+				'SELECT * FROM pesanan WHERE id_pesanan = ?',
+				[pesananId]
+			);
 
 			if (rows.length === 0) {
 				return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
@@ -99,24 +103,51 @@ export async function GET(request: NextRequest) {
 				FROM detail_pesanan dp
 				JOIN produk pr ON dp.id_produk = pr.id_produk
 				WHERE dp.id_pesanan = ?
-			`,
+				`,
 				[pesanan.id_pesanan]
 			);
 
 			pesanan.produk = produkRows;
 			pesanan.total_harga = produkRows.reduce((sum, p) => sum + Number(p.subtotal), 0);
 
-			return NextResponse.json(
-				{
-					success: true,
-					data: pesanan
-				},
-				{ status: 200 }
-			);
+			return NextResponse.json({ success: true, data: pesanan }, { status: 200 });
 		}
 
-		// CASE 2: Jika tidak ada ID, return list pesanan dengan pagination
-		console.log('Fetching pesanan list...');
+		// CASE 2: Jika ada parameter nama (by nama pelanggan)
+		if (nama) {
+			console.log('📥 Mengambil pesanan dengan nama pelanggan:', nama);
+
+			const [rows] = await db.execute<Pesanan[]>(
+				'SELECT * FROM pesanan WHERE nama_pelanggan = ?',
+				[nama]
+			);
+
+			if (rows.length === 0) {
+				return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
+			}
+
+			// Ambil hanya satu pesanan (jika lebih dari satu dengan nama yang sama)
+			const pesanan = rows[0];
+
+			// Ambil detail produk untuk pesanan ini
+			const [produkRows] = await db.execute<ProdukItem[]>(
+				`
+				SELECT dp.id_produk, pr.nama_produk, dp.jumlah, dp.subtotal
+				FROM detail_pesanan dp
+				JOIN produk pr ON dp.id_produk = pr.id_produk
+				WHERE dp.id_pesanan = ?
+				`,
+				[pesanan.id_pesanan]
+			);
+
+			pesanan.produk = produkRows;
+			pesanan.total_harga = produkRows.reduce((sum, p) => sum + Number(p.subtotal), 0);
+
+			return NextResponse.json({ success: true, data: pesanan }, { status: 200 });
+		}
+
+		// CASE 3: Jika tidak ada ID atau nama → list dengan pagination
+		console.log('📥 Mengambil daftar pesanan dengan pagination...');
 
 		const page = parseInt(searchParams.get('page') || '1');
 		const limit = parseInt(searchParams.get('limit') || '10');
@@ -174,7 +205,7 @@ export async function GET(request: NextRequest) {
 				FROM detail_pesanan dp
 				JOIN produk pr ON dp.id_produk = pr.id_produk
 				WHERE dp.id_pesanan = ?
-			`,
+				`,
 				[pesanan.id_pesanan]
 			);
 
@@ -203,7 +234,7 @@ export async function GET(request: NextRequest) {
 			{ status: 200 }
 		);
 	} catch (error) {
-		console.error('Error fetching pesanan:', error);
+		console.error('❌ Gagal mengambil data pesanan:', error);
 		return NextResponse.json({ message: 'Gagal mengambil data pesanan' }, { status: 500 });
 	}
 }
