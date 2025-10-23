@@ -16,8 +16,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Skeleton from '@/components/custom/Skeleton';
 
 // === TIPE DATA SESUAI API ===
 type Category = {
@@ -108,7 +108,6 @@ export default function KategoriPage() {
 			setLoading(false);
 		}
 	};
-
 
 	useEffect(() => {
 		fetchCategories(pageFromUrl, limitFromUrl);
@@ -221,12 +220,8 @@ export default function KategoriPage() {
 			<div className="flex items-center gap-4 mb-4">
 				<h1 className="text-2xl font-bold">Kategori</h1>
 			</div>
-
 			{loading ? (
-				<div className="flex justify-center items-center py-12">
-					<Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-					<span className="ml-2 text-gray-600">Memuat data...</span>
-				</div>
+				<Skeleton variant="table" />
 			) : (
 				<div className="p-4 bg-white rounded-lg shadow">
 					<DataTable

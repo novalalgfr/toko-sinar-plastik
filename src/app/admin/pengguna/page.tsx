@@ -1,14 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { DataTable, createSortableHeader } from '@/components/custom/DataTable';
+import { DataTable } from '@/components/custom/DataTable';
 
 type Pengaturan = {
 	id: number;
 	name: string;
 	email: string;
 	peran: string;
-	no: number;
+	no_telepon: number;
 	rt: number;
 	rw: number;
 	kelurahan: string;
@@ -23,7 +23,7 @@ const pengaturanData: Pengaturan[] = [
 		name: 'Aya Pratama',
 		email: 'aya@example.com',
 		peran: 'Admin',
-		no: 15,
+		no_telepon: 15,
 		rt: 3,
 		rw: 2,
 		kelurahan: 'Cempaka Putih',
@@ -36,7 +36,7 @@ const pengaturanData: Pengaturan[] = [
 		name: 'Eja Saputra',
 		email: 'eja@example.com',
 		peran: 'Petugas',
-		no: 27,
+		no_telepon: 27,
 		rt: 1,
 		rw: 5,
 		kelurahan: 'Sukajadi',
@@ -50,11 +50,17 @@ export default function PengaturanPage() {
 	const [data] = React.useState<Pengaturan[]>(pengaturanData);
 
 	const columns = [
-		{ accessorKey: 'id', header: createSortableHeader<Pengaturan>('ID') },
-		{ accessorKey: 'name', header: createSortableHeader<Pengaturan>('Nama') },
+		{
+			id: 'no',
+			header: 'No',
+			enableSorting: false,
+			cell: ({ row }: { row: { index: number } }) => <div>{row.index + 1}</div>
+		},
+		{ accessorKey: 'name', header: 'Nama' },
 		{ accessorKey: 'email', header: 'Email' },
 		{ accessorKey: 'peran', header: 'Peran' },
-		{ accessorKey: 'no', header: 'No Rumah' },
+		{ accessorKey: 'no_telepon', header: 'No Telepon' },
+		{ accessorKey: 'alamat', header: 'Alamat' },
 		{ accessorKey: 'rt', header: 'RT' },
 		{ accessorKey: 'rw', header: 'RW' },
 		{ accessorKey: 'kelurahan', header: 'Kelurahan' },
@@ -64,15 +70,19 @@ export default function PengaturanPage() {
 	];
 
 	return (
-		<section className="p-6">
-			<h1 className="text-2xl font-bold mb-4">Pengaturan Pengguna</h1>
-			<DataTable
-				columns={columns}
-				data={data}
-				searchKey="name"
-				searchPlaceholder="Cari nama pengguna..."
-				showColumnToggle={false}
-			/>
+		<section>
+			<div className="flex items-center gap-4 mb-4">
+				<h1 className="text-2xl font-bold">Pengaturan Pengguna</h1>
+			</div>
+			<div className="p-4 bg-white rounded-lg shadow">
+				<DataTable
+					columns={columns}
+					data={data}
+					searchKey="name"
+					searchPlaceholder="Cari nama pengguna..."
+					showColumnToggle={false}
+				/>
+			</div>
 		</section>
 	);
 }

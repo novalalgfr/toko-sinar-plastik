@@ -12,7 +12,7 @@ const navItems = [
 	{ title: 'Produk', href: '/admin/produk', icon: ShoppingBasket },
 	{ title: 'Kategori', href: '/admin/kategori', icon: List },
 	{ title: 'Pesanan', href: '/admin/pesanan', icon: ShoppingCart },
-	{ title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings }
+	{ title: 'Pengguna', href: '/admin/pengguna', icon: Settings }
 ];
 
 interface SideNavbarProps {

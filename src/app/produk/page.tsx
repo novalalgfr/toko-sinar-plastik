@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Search, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProductCard } from '@/components/custom/ProductCard';
 import {
@@ -49,11 +49,9 @@ export default function ProductPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// Ambil page dan limit dari URL
 	const pageFromUrl = parseInt(searchParams.get('page') || '1');
-	const limitFromUrl = parseInt(searchParams.get('limit') || '8'); // tampil 8 produk per halaman
+	const limitFromUrl = parseInt(searchParams.get('limit') || '10');
 
-	// State utama
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -63,11 +61,9 @@ export default function ProductPage() {
 		totalPages: 1
 	});
 
-	// Search & sort
 	const [search, setSearch] = useState('');
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-	// Update URL params
 	const updateUrlParams = (page: number, limit: number) => {
 		const params = new URLSearchParams();
 		params.set('page', page.toString());
@@ -75,7 +71,6 @@ export default function ProductPage() {
 		router.push(`?${params.toString()}`, { scroll: false });
 	};
 
-	// Fetch produk dari API
 	const fetchProducts = async (page: number = 1, limit: number = 8) => {
 		try {
 			setLoading(true);
@@ -109,12 +104,10 @@ export default function ProductPage() {
 		}
 	};
 
-	// Efek: ambil data ketika page berubah
 	useEffect(() => {
 		fetchProducts(pageFromUrl, limitFromUrl);
 	}, [pageFromUrl, limitFromUrl]);
 
-	// Filter & sort lokal (client-side)
 	const filteredProducts = products
 		.filter((p) => p.nama_produk.toLowerCase().includes(search.toLowerCase()))
 		.sort((a, b) => (sortOrder === 'asc' ? a.harga - b.harga : b.harga - a.harga));
@@ -125,11 +118,7 @@ export default function ProductPage() {
 
 	return (
 		<section className="w-full container mx-auto py-6">
-			<h1 className="text-2xl font-bold mb-6">Daftar Produk</h1>
-
-			{/* Search & Sort */}
 			<div className="flex justify-between items-center mb-8">
-				{/* Search */}
 				<div className="relative w-[240px] h-[40px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
 					<Input
@@ -141,7 +130,6 @@ export default function ProductPage() {
 					/>
 				</div>
 
-				{/* Sort Button */}
 				<Button
 					onClick={toggleSortOrder}
 					className="flex items-center justify-center gap-2 border border-gray-300 rounded-full text-sm font-medium bg-white text-gray-800 hover:bg-gray-100 transition w-[224px] h-[40px]"
@@ -151,11 +139,21 @@ export default function ProductPage() {
 				</Button>
 			</div>
 
-			{/* Loading state */}
 			{loading ? (
-				<div className="flex justify-center items-center py-12">
-					<Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-					<span className="ml-2 text-gray-600">Memuat data produk...</span>
+				<div className="grid sm:grid-cols-4 grid-cols-2 gap-6 animate-pulse">
+					{[...Array(10)].map((_, i) => (
+						<div
+							key={i}
+							className="flex flex-col bg-gray-200 rounded-lg h-80 overflow-hidden"
+						>
+							<div className="w-full h-48 bg-gray-300" />
+							<div className="p-4 space-y-3">
+								<div className="h-4 w-3/4 bg-gray-300 rounded" />
+								<div className="h-4 w-1/2 bg-gray-300 rounded" />
+								<div className="h-8 w-full bg-gray-300 rounded-lg" />
+							</div>
+						</div>
+					))}
 				</div>
 			) : error ? (
 				<div className="text-center py-8">
@@ -164,9 +162,8 @@ export default function ProductPage() {
 				</div>
 			) : (
 				<>
-					{/* Produk Grid */}
 					{filteredProducts.length > 0 ? (
-						<div className="grid grid-cols-4 gap-6">
+						<div className="grid sm:grid-cols-4 grid-cols-2 gap-6">
 							{filteredProducts.map((p) => (
 								<ProductCard
 									key={p.id_produk}
@@ -183,12 +180,9 @@ export default function ProductPage() {
 						<p className="text-center text-gray-500">Produk tidak ditemukan.</p>
 					)}
 
-					{/* Pagination */}
-					{/* {pagination.totalPages > 1 && ( */}
 					<div className="mt-10 flex justify-center">
 						<Pagination>
 							<PaginationContent>
-								{/* Tombol Sebelumnya */}
 								<PaginationItem>
 									<PaginationPrevious
 										onClick={() => {
@@ -202,8 +196,6 @@ export default function ProductPage() {
 										}
 									/>
 								</PaginationItem>
-
-								{/* Nomor halaman */}
 								{Array.from({ length: pagination.totalPages }, (_, i) => (
 									<PaginationItem key={i}>
 										<PaginationLink
@@ -215,8 +207,6 @@ export default function ProductPage() {
 										</PaginationLink>
 									</PaginationItem>
 								))}
-
-								{/* Tombol Selanjutnya */}
 								<PaginationItem>
 									<PaginationNext
 										onClick={() => {
@@ -233,7 +223,6 @@ export default function ProductPage() {
 							</PaginationContent>
 						</Pagination>
 					</div>
-					{/* )} */}
 				</>
 			)}
 		</section>

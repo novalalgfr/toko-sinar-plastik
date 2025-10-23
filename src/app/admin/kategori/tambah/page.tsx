@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ImageUpload } from '@/components/ui/image-upload';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -77,7 +77,17 @@ export default function TambahKategoriPage() {
 
 	return (
 		<section>
-			<h1 className="text-2xl font-bold mb-4">Tambah Kategori</h1>
+			<div className="flex items-center gap-4 mb-4">
+				<Button
+					variant="outline"
+					size="icon"
+					onClick={() => router.push('/admin/kategori')}
+					className="cursor-pointer"
+				>
+					<ArrowLeft className="h-4 w-4" />
+				</Button>
+				<h1 className="text-2xl font-bold">Tambah Kategori</h1>
+			</div>
 
 			<form
 				onSubmit={handleSubmit}

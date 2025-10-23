@@ -16,7 +16,6 @@ export function ImageUpload({ id, label, onFileChange, defaultPreview }: ImageUp
 	const [file, setFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<string | null>(defaultPreview || null);
 
-	// Update preview jika defaultPreview berubah
 	useEffect(() => {
 		if (defaultPreview && !file) {
 			setPreview(defaultPreview);
@@ -28,14 +27,12 @@ export function ImageUpload({ id, label, onFileChange, defaultPreview }: ImageUp
 			const selectedFile = e.target.files[0];
 			setFile(selectedFile);
 
-			// Buat preview URL
 			const reader = new FileReader();
 			reader.onloadend = () => {
 				setPreview(reader.result as string);
 			};
 			reader.readAsDataURL(selectedFile);
 
-			// Kirim file ke parent component
 			if (onFileChange) {
 				onFileChange(selectedFile);
 			}
@@ -46,13 +43,11 @@ export function ImageUpload({ id, label, onFileChange, defaultPreview }: ImageUp
 		setFile(null);
 		setPreview(null);
 
-		// Reset input file
 		const input = document.getElementById(id) as HTMLInputElement;
 		if (input) {
 			input.value = '';
 		}
 
-		// Kirim null ke parent component
 		if (onFileChange) {
 			onFileChange(null);
 		}

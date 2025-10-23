@@ -16,8 +16,8 @@ import {
 	AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Skeleton from '@/components/custom/Skeleton';
 
 type Product = {
 	id_produk: number;
@@ -145,7 +145,7 @@ export default function ProdukPage() {
 				throw new Error(error.message || 'Gagal menghapus produk');
 			}
 
-			toast.error('Produk berhasil dihapus!');
+			toast.success('Produk berhasil dihapus!');
 
 			setDeleteDialog({ open: false, product: null });
 
@@ -275,10 +275,7 @@ export default function ProdukPage() {
 				<h1 className="text-2xl font-bold">Tambah Produk</h1>
 			</div>
 			{loading ? (
-				<div className="flex justify-center items-center py-12">
-					<Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-					<span className="ml-2 text-gray-600">Memuat data...</span>
-				</div>
+				<Skeleton variant="table" />
 			) : (
 				<div className="p-4 bg-white rounded-lg shadow">
 					<DataTable

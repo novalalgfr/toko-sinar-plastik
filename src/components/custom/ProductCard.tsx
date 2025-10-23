@@ -49,7 +49,7 @@ export function ProductCard({
 						<div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
 
 						{/* Quick view badge - appears on hover */}
-						<div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+						{/* <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
 							<div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
 								<span className="text-xs font-medium text-[#0a452f] flex items-center gap-1">
 									<svg
@@ -74,7 +74,7 @@ export function ProductCard({
 									Quick View
 								</span>
 							</div>
-						</div>
+						</div> */}
 					</>
 				) : (
 					<div className="absolute inset-0 flex items-center justify-center">
