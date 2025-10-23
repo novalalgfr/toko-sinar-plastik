@@ -12,7 +12,8 @@ type UserRow = RowDataPacket & {
 	password?: string;
 	alamat?: string | null;
 	alamat_peta?: string | null;
-	rt_rw?: string | null;
+	rt?: string | null;
+	rw?: string | null;
 	kelurahan?: string | null;
 	kecamatan?: string | null;
 	nomor_telepon?: string | null;
@@ -23,7 +24,8 @@ type UserRow = RowDataPacket & {
 type UpdateProfileBody = {
 	alamat?: string;
 	alamatPeta?: string;
-	rt_rw?: string;
+	rt?: string;
+	rw?: string;
 	kelurahan?: string;
 	kecamatan?: string;
 	latitude?: number;
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
 		conn = await db.getConnection();
 
 		const [rows] = await conn.query<UserRow[]>(
-			`SELECT id, name, email, alamat, alamat_peta, rt_rw, kelurahan, kecamatan, nomor_telepon, latitude, longitude 
+			`SELECT id, name, email, alamat, alamat_peta, rt, rw, kelurahan, kecamatan, nomor_telepon, latitude, longitude 
              FROM users WHERE email = ? LIMIT 1`,
 			[token.email]
 		);
@@ -76,7 +78,8 @@ export async function PUT(request: NextRequest) {
 		const {
 			alamat,
 			alamatPeta,
-			rt_rw,
+			rt,
+			rw,
 			kelurahan,
 			kecamatan,
 			latitude,
@@ -108,9 +111,13 @@ export async function PUT(request: NextRequest) {
 			updateFields.push('alamat_peta = ?');
 			updateValues.push(alamatPeta);
 		}
-		if (rt_rw !== undefined) {
-			updateFields.push('rt_rw = ?');
-			updateValues.push(rt_rw);
+		if (rt !== undefined) {
+			updateFields.push('rt = ?');
+			updateValues.push(rt);
+		}
+		if (rw !== undefined) {
+			updateFields.push('rw = ?');
+			updateValues.push(rw);
 		}
 		if (kelurahan !== undefined) {
 			updateFields.push('kelurahan = ?');
