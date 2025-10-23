@@ -31,10 +31,6 @@ interface Beranda extends RowDataPacket {
 	updated_at: Date;
 }
 
-interface CountResult extends RowDataPacket {
-	total: number;
-}
-
 // Fungsi untuk cek auth ADMIN (untuk POST, PUT, DELETE)
 async function checkAdminAuth(request: NextRequest) {
 	const token = await getToken({
@@ -49,7 +45,6 @@ async function checkAdminAuth(request: NextRequest) {
 		};
 	}
 
-	// Cek apakah role adalah admin
 	if (token.role !== 'admin') {
 		return {
 			authenticated: false,
@@ -60,19 +55,19 @@ async function checkAdminAuth(request: NextRequest) {
 	return { authenticated: true, token };
 }
 
-// Fungsi untuk menambahkan URL gambar agar bisa diakses di front-end
+// Tambahkan URL gambar agar bisa diakses di front-end
 function addImageUrl(data: Beranda[], baseUrl: string) {
 	return data.map((item) => ({
 		...item,
-		gambar_utama_url: item.gambar_utama && item.gambar_utama !== '' ? `${baseUrl}/${item.gambar_utama}` : null,
-		gambar_1_url: item.gambar_1 && item.gambar_1 !== '' ? `${baseUrl}/${item.gambar_1}` : null,
-		gambar_2_url: item.gambar_2 && item.gambar_2 !== '' ? `${baseUrl}/${item.gambar_2}` : null,
-		gambar_ct_url: item.gambar_ct && item.gambar_ct !== '' ? `${baseUrl}/${item.gambar_ct}` : null
+		gambar_utama_url: item.gambar_utama ? `${baseUrl}${item.gambar_utama}` : null,
+		gambar_1_url: item.gambar_1 ? `${baseUrl}${item.gambar_1}` : null,
+		gambar_2_url: item.gambar_2 ? `${baseUrl}${item.gambar_2}` : null,
+		gambar_ct_url: item.gambar_ct ? `${baseUrl}${item.gambar_ct}` : null
 	}));
 }
 
 /* ==========================================================
-   GET — Ambil data beranda dengan pagination dan pencarian
+   GET — Ambil semua data beranda (tanpa pagination)
    (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
@@ -80,60 +75,28 @@ export async function GET(request: NextRequest) {
 		console.log('Fetching beranda data...');
 
 		const { searchParams } = new URL(request.url);
-		const page = parseInt(searchParams.get('page') || '1');
-		const limit = parseInt(searchParams.get('limit') || '10');
 		const search = searchParams.get('search') || '';
 
-		if (page < 1 || limit < 1) {
-			return NextResponse.json({ message: 'Page dan limit harus lebih dari 0' }, { status: 400 });
-		}
-
-		if (limit > 100) {
-			return NextResponse.json({ message: 'Limit maksimal adalah 100' }, { status: 400 });
-		}
-
-		const offset = (page - 1) * limit;
-
-		let countQuery = 'SELECT COUNT(*) AS total FROM beranda';
-		let countParams: any[] = [];
-
-		let dataQuery = 'SELECT * FROM beranda';
-		let dataParams: any[] = [];
+		let query = 'SELECT * FROM beranda';
+		const params: any[] = [];
 
 		if (search) {
-			const condition = ' WHERE kolom_title_1 LIKE ? OR kolom_title_2 LIKE ? OR kolom_title_3 LIKE ?';
-			countQuery += condition;
-			dataQuery += condition;
+			query += ' WHERE kolom_title_1 LIKE ? OR kolom_title_2 LIKE ? OR kolom_title_3 LIKE ?';
 			const searchParam = `%${search}%`;
-			countParams = [searchParam, searchParam, searchParam];
-			dataParams = [searchParam, searchParam, searchParam];
+			params.push(searchParam, searchParam, searchParam);
 		}
 
-		dataQuery += ' ORDER BY id_beranda DESC LIMIT ? OFFSET ?';
-		dataParams.push(limit, offset);
+		query += ' ORDER BY id_beranda DESC';
 
-		const [[countRow]] = await db.execute<CountResult[]>(countQuery, countParams);
-		const [rows] = await db.execute<Beranda[]>(dataQuery, dataParams);
+		const [rows] = await db.execute<Beranda[]>(query, params);
 
-		const totalItems = countRow.total;
-		const totalPages = Math.ceil(totalItems / limit);
 		const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 		const dataWithUrls = addImageUrl(rows, baseUrl);
 
 		return NextResponse.json(
 			{
 				success: true,
-				data: dataWithUrls,
-				pagination: {
-					currentPage: page,
-					totalPages,
-					totalItems,
-					itemsPerPage: limit,
-					hasNextPage: page < totalPages,
-					hasPrevPage: page > 1,
-					nextPage: page < totalPages ? page + 1 : null,
-					prevPage: page > 1 ? page - 1 : null
-				}
+				data: dataWithUrls
 			},
 			{ status: 200 }
 		);
@@ -148,15 +111,12 @@ export async function GET(request: NextRequest) {
    (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function POST(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
 	}
 
 	try {
-		console.log('Creating new beranda...');
-
 		const formData = await request.formData();
 
 		const kolom_title_1 = formData.get('kolom_title_1') as string;
@@ -177,45 +137,22 @@ export async function POST(request: NextRequest) {
 		let gambar_2: string | null = null;
 		let gambar_ct: string | null = null;
 
-		if (gambarUtama && gambarUtama.size > 0) {
-			const fileName = `${Date.now()}-${gambarUtama.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambarUtama.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-			gambar_utama = `/uploads/${fileName}`;
-			console.log('File uploaded:', gambar_utama);
+		async function saveFile(file: File | null) {
+			if (file && file.size > 0) {
+				const fileName = `${Date.now()}-${file.name}`;
+				const filePath = path.join(uploadDir, fileName);
+				const arrayBuffer = await file.arrayBuffer();
+				const buffer = Buffer.from(arrayBuffer);
+				fs.writeFileSync(filePath, buffer);
+				return `/uploads/${fileName}`;
+			}
+			return null;
 		}
 
-		if (gambar1 && gambar1.size > 0) {
-			const fileName = `${Date.now()}-${gambar1.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambar1.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-			gambar_1 = `/uploads/${fileName}`;
-			console.log('File uploaded:', gambar_1);
-		}
-
-		if (gambar2 && gambar2.size > 0) {
-			const fileName = `${Date.now()}-${gambar2.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambar2.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-			gambar_2 = `/uploads/${fileName}`;
-			console.log('File uploaded:', gambar_2);
-		}
-
-		if (gambarCt && gambarCt.size > 0) {
-			const fileName = `${Date.now()}-${gambarCt.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambarCt.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-			gambar_ct = `/uploads/${fileName}`;
-			console.log('File uploaded:', gambar_ct);
-		}
+		gambar_utama = await saveFile(gambarUtama);
+		gambar_1 = await saveFile(gambar1);
+		gambar_2 = await saveFile(gambar2);
+		gambar_ct = await saveFile(gambarCt);
 
 		const [result] = await db.execute<ResultSetHeader>(
 			`INSERT INTO beranda (
@@ -239,13 +176,8 @@ export async function POST(request: NextRequest) {
 			]
 		);
 
-		console.log('Beranda inserted with ID:', result.insertId);
-
 		return NextResponse.json(
-			{
-				message: 'Data beranda berhasil ditambahkan',
-				id: result.insertId
-			},
+			{ message: 'Data beranda berhasil ditambahkan', id: result.insertId },
 			{ status: 201 }
 		);
 	} catch (error) {
@@ -255,19 +187,15 @@ export async function POST(request: NextRequest) {
 }
 
 /* ==========================================================
-   PUT — Update data beranda + ganti gambar jika ada
-   (PROTECTED - HANYA ADMIN)
+   PUT — Update data beranda
    ========================================================== */
 export async function PUT(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
 	}
 
 	try {
-		console.log('Updating beranda...');
-
 		const formData = await request.formData();
 		const id_beranda = parseInt(formData.get('id_beranda') as string);
 
@@ -279,94 +207,46 @@ export async function PUT(request: NextRequest) {
 		const kolom_subtitle_3 = formData.get('kolom_subtitle_3') as string;
 		const deskripsi_ct = formData.get('deskripsi_ct') as string;
 
-		const [existingRows] = await db.execute<Beranda[]>('SELECT * FROM beranda WHERE id_beranda = ?', [id_beranda]);
-
-		if (existingRows.length === 0) {
-			return NextResponse.json({ message: 'Data beranda tidak ditemukan' }, { status: 404 });
+		const [rows] = await db.execute<Beranda[]>('SELECT * FROM beranda WHERE id_beranda = ?', [id_beranda]);
+		if (rows.length === 0) {
+			return NextResponse.json({ message: 'Data tidak ditemukan' }, { status: 404 });
 		}
 
-		const data = existingRows[0];
-
+		const data = rows[0];
 		let gambar_utama = data.gambar_utama;
 		let gambar_1 = data.gambar_1;
 		let gambar_2 = data.gambar_2;
 		let gambar_ct = data.gambar_ct;
 
-		const gambarUtamaFile = formData.get('gambar_utama') as File | null;
-		if (gambarUtamaFile && gambarUtamaFile.size > 0) {
-			const fileName = `${Date.now()}-${gambarUtamaFile.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambarUtamaFile.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
+		async function replaceFile(oldFile: string | null, newFile: File | null) {
+			if (newFile && newFile.size > 0) {
+				const fileName = `${Date.now()}-${newFile.name}`;
+				const filePath = path.join(uploadDir, fileName);
+				const arrayBuffer = await newFile.arrayBuffer();
+				fs.writeFileSync(filePath, Buffer.from(arrayBuffer));
 
-			if (gambar_utama) {
-				const oldImagePath = path.join(process.cwd(), 'public', gambar_utama);
-				if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+				if (oldFile) {
+					const oldPath = path.join(process.cwd(), 'public', oldFile);
+					if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+				}
+
+				return `/uploads/${fileName}`;
 			}
-
-			gambar_utama = `/uploads/${fileName}`;
-			console.log('Gambar utama updated:', gambar_utama);
+			return oldFile;
 		}
 
-		const gambar1File = formData.get('gambar_1') as File | null;
-		if (gambar1File && gambar1File.size > 0) {
-			const fileName = `${Date.now()}-${gambar1File.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambar1File.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-
-			if (gambar_1) {
-				const oldImagePath = path.join(process.cwd(), 'public', gambar_1);
-				if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-			}
-
-			gambar_1 = `/uploads/${fileName}`;
-			console.log('Gambar 1 updated:', gambar_1);
-		}
-
-		const gambar2File = formData.get('gambar_2') as File | null;
-		if (gambar2File && gambar2File.size > 0) {
-			const fileName = `${Date.now()}-${gambar2File.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambar2File.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-
-			if (gambar_2) {
-				const oldImagePath = path.join(process.cwd(), 'public', gambar_2);
-				if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-			}
-
-			gambar_2 = `/uploads/${fileName}`;
-			console.log('Gambar 2 updated:', gambar_2);
-		}
-
-		const gambarCtFile = formData.get('gambar_ct') as File | null;
-		if (gambarCtFile && gambarCtFile.size > 0) {
-			const fileName = `${Date.now()}-${gambarCtFile.name}`;
-			const filePath = path.join(uploadDir, fileName);
-			const arrayBuffer = await gambarCtFile.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			fs.writeFileSync(filePath, buffer);
-
-			if (gambar_ct) {
-				const oldImagePath = path.join(process.cwd(), 'public', gambar_ct);
-				if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-			}
-
-			gambar_ct = `/uploads/${fileName}`;
-			console.log('Gambar CT updated:', gambar_ct);
-		}
+		gambar_utama = await replaceFile(data.gambar_utama, formData.get('gambar_utama') as File | null);
+		gambar_1 = await replaceFile(data.gambar_1, formData.get('gambar_1') as File | null);
+		gambar_2 = await replaceFile(data.gambar_2, formData.get('gambar_2') as File | null);
+		gambar_ct = await replaceFile(data.gambar_ct, formData.get('gambar_ct') as File | null);
 
 		await db.execute<ResultSetHeader>(
 			`UPDATE beranda SET 
 				gambar_utama=?, gambar_1=?, gambar_2=?,
 				kolom_title_1=?, kolom_title_2=?, kolom_title_3=?,
 				kolom_subtitle_1=?, kolom_subtitle_2=?, kolom_subtitle_3=?,
-				gambar_ct=?, deskripsi_ct=?
-			 WHERE id_beranda=?`,
+				gambar_ct=?, deskripsi_ct=? 
+			WHERE id_beranda=?`,
 			[
 				gambar_utama,
 				gambar_1,
@@ -383,21 +263,17 @@ export async function PUT(request: NextRequest) {
 			]
 		);
 
-		console.log('Beranda updated successfully');
-
 		return NextResponse.json({ message: 'Data beranda berhasil diperbarui' }, { status: 200 });
 	} catch (error) {
 		console.error('Error updating beranda:', error);
-		return NextResponse.json({ message: 'Gagal memperbarui beranda' }, { status: 500 });
+		return NextResponse.json({ message: 'Gagal memperbarui data' }, { status: 500 });
 	}
 }
 
 /* ==========================================================
-   DELETE — Hapus data beranda + hapus gambar fisik
-   (PROTECTED - HANYA ADMIN)
+   DELETE — Hapus data beranda + gambar
    ========================================================== */
 export async function DELETE(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
@@ -411,29 +287,24 @@ export async function DELETE(request: NextRequest) {
 			return NextResponse.json({ message: 'ID beranda wajib diisi' }, { status: 400 });
 		}
 
-		const [existingRows] = await db.execute<Beranda[]>('SELECT * FROM beranda WHERE id_beranda = ?', [id_beranda]);
-
-		if (existingRows.length === 0) {
+		const [rows] = await db.execute<Beranda[]>('SELECT * FROM beranda WHERE id_beranda = ?', [id_beranda]);
+		if (rows.length === 0) {
 			return NextResponse.json({ message: 'Data tidak ditemukan' }, { status: 404 });
 		}
 
-		const data = existingRows[0];
-
+		const data = rows[0];
 		await db.execute<ResultSetHeader>('DELETE FROM beranda WHERE id_beranda = ?', [id_beranda]);
 
 		[data.gambar_utama, data.gambar_1, data.gambar_2, data.gambar_ct].forEach((img) => {
 			if (img) {
-				const imagePath = path.join(process.cwd(), 'public', img);
-				if (fs.existsSync(imagePath)) {
-					fs.unlinkSync(imagePath);
-					console.log('File gambar dihapus:', imagePath);
-				}
+				const imgPath = path.join(process.cwd(), 'public', img);
+				if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
 			}
 		});
 
 		return NextResponse.json({ message: 'Data beranda berhasil dihapus' }, { status: 200 });
 	} catch (error) {
 		console.error('Error deleting beranda:', error);
-		return NextResponse.json({ message: 'Gagal menghapus beranda' }, { status: 500 });
+		return NextResponse.json({ message: 'Gagal menghapus data' }, { status: 500 });
 	}
 }

@@ -54,7 +54,7 @@ async function checkAdminAuth(request: NextRequest) {
 function addImageUrl(data: Kategori[], baseUrl: string) {
 	return data.map((item) => ({
 		...item,
-		image_url: item.gambar ? `${baseUrl}/uploads/${item.gambar}` : null
+		image_url: item.gambar ? `${baseUrl}/${item.gambar}` : null
 	}));
 }
 
@@ -62,7 +62,7 @@ function addImageUrl(data: Kategori[], baseUrl: string) {
 function addImageUrlSingle(item: Kategori, baseUrl: string) {
 	return {
 		...item,
-		image_url: item.gambar ? `${baseUrl}/uploads/${item.gambar}` : null
+		image_url: item.gambar ? `${baseUrl}/${item.gambar}` : null
 	};
 }
 
