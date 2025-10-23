@@ -12,6 +12,7 @@ interface Kontak extends RowDataPacket {
 	longitude: number | null;
 	nomor_telpon: string;
 	email: string | null;
+	jam_operasional: string | null;
 	created_at: Date;
 	updated_at: Date;
 }
@@ -30,7 +31,6 @@ async function checkAdminAuth(request: NextRequest) {
 		};
 	}
 
-	// Cek apakah role adalah admin
 	if (token.role !== 'admin') {
 		return {
 			authenticated: false,
@@ -43,7 +43,6 @@ async function checkAdminAuth(request: NextRequest) {
 
 /* ==========================================================
    GET — Menampilkan data kontak
-   (PUBLIC - Bisa diakses tanpa login)
    ========================================================== */
 export async function GET(request: NextRequest) {
 	try {
@@ -56,22 +55,16 @@ export async function GET(request: NextRequest) {
 		let dataParams: any[] = [];
 
 		if (search) {
-			dataQuery += ' WHERE lokasi LIKE ? OR nomor_telpon LIKE ? OR email LIKE ?';
+			dataQuery += ' WHERE lokasi LIKE ? OR nomor_telpon LIKE ? OR email LIKE ? OR jam_operasional LIKE ?';
 			const searchParam = `%${search}%`;
-			dataParams = [searchParam, searchParam, searchParam];
+			dataParams = [searchParam, searchParam, searchParam, searchParam];
 		}
 
 		dataQuery += ' ORDER BY id_kontak DESC';
 
 		const [rows] = await db.execute<Kontak[]>(dataQuery, dataParams);
 
-		return NextResponse.json(
-			{
-				success: true,
-				data: rows
-			},
-			{ status: 200 }
-		);
+		return NextResponse.json({ success: true, data: rows }, { status: 200 });
 	} catch (error) {
 		console.error('Error fetching kontak:', error);
 		return NextResponse.json({ message: 'Gagal mengambil data kontak' }, { status: 500 });
@@ -80,10 +73,8 @@ export async function GET(request: NextRequest) {
 
 /* ==========================================================
    POST — Menambahkan kontak baru
-   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function POST(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
@@ -100,12 +91,12 @@ export async function POST(request: NextRequest) {
 		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
+		const jam_operasional = formData.get('jam_operasional') as string | null;
 
 		if (!lokasi || !nomor_telpon) {
 			return NextResponse.json({ message: 'Lokasi dan nomor telepon wajib diisi' }, { status: 400 });
 		}
 
-		// Validasi koordinat jika diisi
 		if (latitude !== null && (latitude < -90 || latitude > 90)) {
 			return NextResponse.json({ message: 'Latitude harus antara -90 dan 90' }, { status: 400 });
 		}
@@ -115,17 +106,14 @@ export async function POST(request: NextRequest) {
 		}
 
 		const [result] = await db.execute<ResultSetHeader>(
-			'INSERT INTO Kontak (deskripsi, lokasi, latitude, longitude, nomor_telpon, email) VALUES (?, ?, ?, ?, ?, ?)',
-			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email]
+			'INSERT INTO Kontak (deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional) VALUES (?, ?, ?, ?, ?, ?, ?)',
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional]
 		);
 
 		console.log('Kontak inserted with ID:', result.insertId);
 
 		return NextResponse.json(
-			{
-				message: 'Kontak berhasil ditambahkan',
-				id: result.insertId
-			},
+			{ message: 'Kontak berhasil ditambahkan', id: result.insertId },
 			{ status: 201 }
 		);
 	} catch (error) {
@@ -136,10 +124,8 @@ export async function POST(request: NextRequest) {
 
 /* ==========================================================
    PUT — Update kontak
-   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function PUT(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
@@ -157,12 +143,12 @@ export async function PUT(request: NextRequest) {
 		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
+		const jam_operasional = formData.get('jam_operasional') as string | null;
 
 		if (!id_kontak || !lokasi || !nomor_telpon) {
 			return NextResponse.json({ message: 'ID, lokasi, dan nomor telepon wajib diisi' }, { status: 400 });
 		}
 
-		// Validasi koordinat jika diisi
 		if (latitude !== null && (latitude < -90 || latitude > 90)) {
 			return NextResponse.json({ message: 'Latitude harus antara -90 dan 90' }, { status: 400 });
 		}
@@ -180,8 +166,8 @@ export async function PUT(request: NextRequest) {
 		}
 
 		await db.execute<ResultSetHeader>(
-			'UPDATE Kontak SET deskripsi=?, lokasi=?, latitude=?, longitude=?, nomor_telpon=?, email=? WHERE id_kontak=?',
-			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, id_kontak]
+			'UPDATE Kontak SET deskripsi=?, lokasi=?, latitude=?, longitude=?, nomor_telpon=?, email=?, jam_operasional=? WHERE id_kontak=?',
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional, id_kontak]
 		);
 
 		console.log('Kontak updated successfully');
@@ -195,10 +181,8 @@ export async function PUT(request: NextRequest) {
 
 /* ==========================================================
    DELETE — Hapus kontak
-   (PROTECTED - HANYA ADMIN)
    ========================================================== */
 export async function DELETE(request: NextRequest) {
-	// Auth check untuk ADMIN
 	const authCheck = await checkAdminAuth(request);
 	if (!authCheck.authenticated) {
 		return authCheck.response;
