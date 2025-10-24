@@ -213,7 +213,7 @@ export default function SettingPage() {
 				onSubmit={handleSubmit}
 				className="space-y-8"
 			>
-				<Card>
+				<Card className="border border-gray-200 rounded-lg shadow-none">
 					<CardHeader>
 						<CardTitle>Pengaturan Akun</CardTitle>
 					</CardHeader>

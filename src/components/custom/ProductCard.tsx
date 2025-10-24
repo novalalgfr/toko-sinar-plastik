@@ -86,7 +86,7 @@ export function ProductCard({
 				<div className="flex flex-col gap-2.5">
 					<Button
 						onClick={onAddToCart}
-						className="w-full bg-gradient-to-r from-[#0a452f] to-[#0d5a3d] hover:from-[#083926] hover:to-[#0a452f] text-white text-sm font-semibold h-10 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+						className="w-full bg-gradient-to-r from-[#0a452f] to-[#0d5a3d] hover:from-[#083926] hover:to-[#0a452f] text-white text-sm font-semibold h-10 transition-all duration-300 transform"
 					>
 						<svg
 							className="w-5 h-5 mr-2"
@@ -107,7 +107,7 @@ export function ProductCard({
 					<Button
 						onClick={onViewDetail}
 						variant="outline"
-						className="w-full border-2 border-gray-300 text-gray-700 hover:border-[#0a452f] hover:text-[#0a452f] hover:bg-[#0a452f]/5 text-sm font-semibold h-10 transition-all duration-300"
+						className="w-full border-2 border-gray-300 text-gray-700 hover:text-[#0a452f] hover:bg-[#0a452f]/5 text-sm font-semibold h-10 transition-all duration-300"
 					>
 						<svg
 							className="w-4 h-4 mr-2"
