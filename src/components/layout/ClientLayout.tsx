@@ -8,6 +8,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { SideNavbar } from '@/components/layout/sideNavbar';
 import { Footer } from './footer';
 import { Toaster } from '../ui/sonner';
+import { CartProvider } from '@/context/CartContext';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
 	const { data: session } = useSession();
@@ -50,9 +51,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
 	return (
 		<>
-			<Navbar />
-			<main className="container mx-auto px-4 md:px-6 lg:px-8 my-6">{children}</main>
-			<Toaster />
+			<CartProvider>
+				<Navbar />
+				<main className="container mx-auto px-4 md:px-6 lg:px-8 my-6">{children}</main>
+				<Toaster />
+			</CartProvider>
 			<Footer />
 		</>
 	);

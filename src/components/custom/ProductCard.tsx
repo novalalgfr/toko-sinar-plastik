@@ -31,7 +31,6 @@ export function ProductCard({
 		<div
 			className={`group relative w-full bg-white rounded-2xl overflow-hidden transition-all duration-300 border border-gray-200/60 hover:border-[#0a452f]/30 hover:shadow-xl ${className}`}
 		>
-			{/* Image area with overlay actions */}
 			<div
 				className="relative w-full h-[240px] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden cursor-pointer"
 				onClick={onViewDetail}
@@ -45,36 +44,7 @@ export function ProductCard({
 							className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
 							sizes="100%"
 						/>
-						{/* Dark overlay on hover */}
 						<div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-
-						{/* Quick view badge - appears on hover */}
-						{/* <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-							<div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
-								<span className="text-xs font-medium text-[#0a452f] flex items-center gap-1">
-									<svg
-										className="w-3.5 h-3.5"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-										/>
-									</svg>
-									Quick View
-								</span>
-							</div>
-						</div> */}
 					</>
 				) : (
 					<div className="absolute inset-0 flex items-center justify-center">
@@ -100,9 +70,7 @@ export function ProductCard({
 				)}
 			</div>
 
-			{/* Content area */}
 			<div className="p-6">
-				{/* Product name */}
 				<h3
 					className="text-lg font-bold text-gray-900 mb-4 line-clamp-2 min-h-[3.5rem] cursor-pointer hover:text-[#0a452f] transition-colors leading-snug"
 					onClick={onViewDetail}
@@ -111,12 +79,10 @@ export function ProductCard({
 					{name}
 				</h3>
 
-				{/* Price section */}
 				<div className="flex items-baseline gap-2 mb-5">
 					<p className="text-lg font-bold text-[#0a452f]">{formattedPrice}</p>
 				</div>
 
-				{/* Action buttons - stacked for better mobile UX */}
 				<div className="flex flex-col gap-2.5">
 					<Button
 						onClick={onAddToCart}
@@ -161,7 +127,6 @@ export function ProductCard({
 				</div>
 			</div>
 
-			{/* Decorative corner accent */}
 			<div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-[#0a452f]/5 to-transparent rounded-br-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 		</div>
 	);

@@ -1,239 +1,164 @@
 'use client';
 
-import { useState } from 'react';
+import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
-import { Trash2, Plus, Minus, CheckSquare, Square, ShoppingCart } from 'lucide-react';
-
-interface CartItem {
-	id: number;
-	name: string;
-	desc: string;
-	price: number;
-	oldPrice: number;
-	checked: boolean;
-	image: string;
-	qty?: number;
-}
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox'; // ✅ tambahkan ini
+import { useCart } from '@/context/CartContext';
+import { Card } from '@/components/ui/card';
 
 export default function KeranjangPage() {
-	const [cartItems, setCartItems] = useState<CartItem[]>([
-		{
-			id: 1,
-			name: 'Lorem Ipsum',
-			desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-			price: 9000000,
-			oldPrice: 10000000,
-			checked: true,
-			image: '/images/item1.jpg',
-			qty: 1
-		},
-		{
-			id: 2,
-			name: 'Lorem Ipsum',
-			desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-			price: 6000000,
-			oldPrice: 8000000,
-			checked: true,
-			image: '/images/item2.jpg',
-			qty: 1
-		},
-		{
-			id: 3,
-			name: 'Lorem Ipsum',
-			desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-			price: 6000000,
-			oldPrice: 8000000,
-			checked: true,
-			image: '/images/item3.jpg',
-			qty: 1
-		}
-	]);
+	const { cartItems, toggleCheck, selectAll, removeFromCart, deleteSelected, updateQty, getCheckedItems, getTotal } =
+		useCart();
 
-	const toggleCheck = (id: number) => {
-		setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)));
+	const checkedItems = getCheckedItems();
+	const total = getTotal();
+	const checkedCount = checkedItems.length;
+	const allItemsChecked = cartItems.length > 0 && cartItems.every((item) => item.checked);
+
+	const formatCurrency = (amount: number) => {
+		return new Intl.NumberFormat('id-ID', {
+			style: 'currency',
+			currency: 'IDR',
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 0
+		}).format(amount);
 	};
-
-	const selectAll = (checked: boolean) => {
-		setCartItems((prev) => prev.map((item) => ({ ...item, checked })));
-	};
-
-	const deleteItem = (id: number) => {
-		setCartItems((prev) => prev.filter((item) => item.id !== id));
-	};
-
-	const updateQty = (id: number, change: number) => {
-		setCartItems((prev) =>
-			prev.map((item) => {
-				if (item.id === id) {
-					const newQty = Math.max(1, (item.qty || 1) + change);
-					return { ...item, qty: newQty };
-				}
-				return item;
-			})
-		);
-	};
-
-	const total = cartItems.filter((item) => item.checked).reduce((sum, item) => sum + item.price * (item.qty || 1), 0);
-	const checkedCount = cartItems.filter((item) => item.checked).length;
 
 	return (
-		<div className="min-h-screen py-8 md:py-12">
-			<div>
-				{/* Header */}
-				<div className="mb-8">
-					<div className="flex items-center gap-3 mb-2">
-						<ShoppingCart className="w-8 h-8 text-gray-900" />
-						<h1 className="text-4xl font-bold text-gray-900">Keranjang Belanja</h1>
-					</div>
-					<p className="text-gray-600">{cartItems.length} produk tersedia</p>
-				</div>
-
-				<div className="grid lg:grid-cols-3 gap-8">
-					{/* LEFT SIDE - CART ITEMS */}
-					<div className="lg:col-span-2 space-y-4">
-						{/* Select All Bar */}
-						<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center justify-between hover:shadow-md transition-shadow">
-							<button
-								onClick={() => selectAll(!cartItems.every(item => item.checked))}
-								className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-							>
-								{cartItems.every(item => item.checked) ? (
-									<CheckSquare className="w-6 h-6 text-green-600" />
-								) : (
-									<Square className="w-6 h-6 text-gray-300" />
-								)}
-								<span className="font-semibold text-gray-900">
-									{cartItems.every(item => item.checked) ? 'Batal Pilih Semua' : 'Pilih Semua'}
-								</span>
-							</button>
-							<button className="text-red-500 font-semibold text-sm hover:text-red-600 transition-colors">
-								Hapus Terpilih
-							</button>
-						</div>
-
-						{/* Cart Items */}
-						{cartItems.length > 0 ? (
-							cartItems.map((item) => (
+		<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+			<div className="lg:col-span-2">
+				<Card className="p-0">
+					{cartItems.length > 0 ? (
+						<>
+							{/* Header Pilih Semua */}
+							<div className="p-4 md:p-6 border-b border-gray-200 flex items-center justify-between">
 								<div
-									key={item.id}
-									className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-lg transition-all"
+									className="flex items-center gap-3 cursor-pointer"
+									onClick={() => selectAll(!allItemsChecked)}
 								>
-									<div className="flex gap-4">
-										{/* Checkbox */}
-										<button
-											onClick={() => toggleCheck(item.id)}
-											className="flex-shrink-0 mt-1 hover:opacity-70 transition-opacity"
-										>
-											{item.checked ? (
-												<CheckSquare className="w-6 h-6 text-green-600" />
-											) : (
-												<Square className="w-6 h-6 text-gray-300" />
-											)}
-										</button>
-
-										{/* Product Image */}
-										<div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-											<Image
-												src={item.image}
-												alt={item.name}
-												width={96}
-												height={96}
-												className="object-cover w-full h-full"
-											/>
-										</div>
-
-										{/* Product Info */}
-										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-gray-900 text-lg">{item.name}</h3>
-										</div>
-
-										{/* Price & Actions */}
-										<div className="flex flex-col items-end justify-between">
-											<div className="text-right">
-												<p className="font-bold text-gray-900 text-lg">
-													Rp{(item.price * (item.qty || 1)).toLocaleString('id-ID')}
-												</p>
-											</div>
-
-											<div className="flex items-center gap-3 mt-3">
-												{/* Quantity Control */}
-												<div className="flex items-center border-2 border-gray-200 rounded-lg hover:border-green-600 transition-colors">
-													<button
-														onClick={() => updateQty(item.id, -1)}
-														className="p-2 hover:bg-gray-100 transition-colors"
-													>
-														<Minus className="w-4 h-4 text-gray-600" />
-													</button>
-													<span className="px-3 font-semibold text-gray-900 min-w-[2.5rem] text-center">
-														{item.qty || 1}
-													</span>
-													<button
-														onClick={() => updateQty(item.id, 1)}
-														className="p-2 hover:bg-gray-100 transition-colors"
-													>
-														<Plus className="w-4 h-4 text-gray-600" />
-													</button>
-												</div>
-
-												{/* Delete Button */}
-												<button
-													onClick={() => deleteItem(item.id)}
-													className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-												>
-													<Trash2 className="w-5 h-5" />
-												</button>
-											</div>
-										</div>
-									</div>
-								</div>
-							))
-						) : (
-							<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-								<ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-								<p className="text-gray-600 text-lg">Keranjang Anda kosong</p>
-							</div>
-						)}
-					</div>
-
-					{/* RIGHT SIDE - ORDER SUMMARY */}
-					<div className="lg:col-span-1">
-						<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-20">
-							<h2 className="font-bold text-lg text-gray-900 mb-6">Ringkasan Belanja</h2>
-
-							<div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-								<div className="flex justify-between text-sm">
-									<span className="text-gray-600">Subtotal</span>
-									<span className="font-semibold text-gray-900">
-										Rp{total.toLocaleString('id-ID')}
+									<Checkbox
+										checked={allItemsChecked}
+										onCheckedChange={() => selectAll(!allItemsChecked)}
+									/>
+									<span className="font-medium text-gray-700 select-none">
+										{allItemsChecked ? 'Batal Pilih Semua' : 'Pilih Semua'}
 									</span>
 								</div>
-								<div className="flex justify-between text-sm">
-									<span className="text-gray-600">Ongkos Kirim</span>
-									<span className="font-semibold text-gray-900">Gratis</span>
-								</div>
+
+								<button
+									onClick={deleteSelected}
+									disabled={checkedCount === 0}
+									className="font-medium text-sm text-red-500 hover:text-red-700 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed cursor-pointer"
+								>
+									Hapus Terpilih ({checkedCount})
+								</button>
 							</div>
 
-							<div className="flex justify-between items-center mb-6">
-								<span className="font-bold text-gray-900">Total</span>
-								<span className="text-2xl font-bold text-green-600">
-									Rp{total.toLocaleString('id-ID')}
-								</span>
-							</div>
+							{/* Daftar Item */}
+							<div className="divide-y divide-gray-200">
+								{cartItems.map((item) => (
+									<div
+										key={item.id}
+										className="p-4 md:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
+									>
+										{/* Checkbox + Gambar */}
+										<div className="flex-shrink-0 flex items-center gap-4">
+											<Checkbox
+												checked={item.checked}
+												onCheckedChange={() => toggleCheck(item.id)}
+												className="cursor-pointer"
+											/>
+											<div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+												<Image
+													src={item.image}
+													alt={item.name}
+													width={96}
+													height={96}
+													className="object-cover w-full h-full"
+												/>
+											</div>
+										</div>
 
-							<button
-								disabled={checkedCount === 0}
-								className={`w-full font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
-									checkedCount > 0
-										? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
-										: 'bg-gray-200 text-gray-400 cursor-not-allowed'
-								}`}
-							>
-								<ShoppingCart className="w-5 h-5" />
-								Lanjut Pembayaran
-							</button>
+										{/* Detail Produk */}
+										<div className="flex-1 min-w-0">
+											<h3 className="font-semibold text-gray-900 text-base">{item.name}</h3>
+											<div className="flex items-baseline gap-2 mt-2">
+												<p className="font-bold text-indigo-600 text-base">
+													{formatCurrency(item.price)}
+												</p>
+											</div>
+										</div>
+
+										{/* Kontrol Qty + Hapus */}
+										<div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4">
+											<div className="flex items-center gap-2">
+												<button
+													onClick={() => updateQty(item.id, -1)}
+													disabled={item.qty <= 1}
+													className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+												>
+													<Minus className="w-4 h-4 text-gray-600" />
+												</button>
+												<span className="font-semibold text-gray-900 text-sm min-w-[2.5rem] text-center">
+													{item.qty}
+												</span>
+												<button
+													onClick={() => updateQty(item.id, 1)}
+													className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+												>
+													<Plus className="w-4 h-4 text-gray-600" />
+												</button>
+											</div>
+
+											<button
+												onClick={() => removeFromCart(item.id)}
+												className="p-2 text-gray-400 hover:text-red-500 rounded-md transition-all sm:mt-2 cursor-pointer"
+												aria-label="Hapus item"
+											>
+												<Trash2 className="w-5 h-5" />
+											</button>
+										</div>
+									</div>
+								))}
+							</div>
+						</>
+					) : (
+						<div className="p-12 md:p-16 text-center">
+							<ShoppingCart className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+							<h3 className="text-xl font-semibold text-gray-900 mb-2">Keranjang Anda Kosong</h3>
+							<p className="text-gray-600">Sepertinya Anda belum menambahkan produk apapun.</p>
 						</div>
+					)}
+				</Card>
+			</div>
+
+			{/* Ringkasan Belanja */}
+			<div className="lg:col-span-1">
+				<Card className="p-0 sticky top-12">
+					<div className="p-6 sticky top-12">
+						<h2 className="font-bold text-xl text-gray-900 mb-6">Ringkasan Belanja</h2>
+
+						<div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
+							<div className="flex justify-between text-gray-600">
+								<span>Subtotal ({checkedCount} produk)</span>
+								<span className="font-medium text-gray-900">{formatCurrency(total)}</span>
+							</div>
+						</div>
+
+						<div className="flex justify-between items-center mb-6">
+							<span className="font-bold text-base text-gray-900">Total</span>
+							<span className="text-base font-bold text-indigo-600">{formatCurrency(total)}</span>
+						</div>
+						<Button
+							disabled={checkedCount === 0}
+							className="w-full"
+						>
+							<ShoppingCart className="w-5 h-5" />
+							Lanjut Pembayaran ({checkedCount})
+						</Button>
 					</div>
-				</div>
+				</Card>
 			</div>
 		</div>
 	);

@@ -15,6 +15,7 @@ import {
 	PaginationNext,
 	PaginationPrevious
 } from '@/components/ui/pagination';
+import { useCart } from '@/context/CartContext';
 
 type Product = {
 	id_produk: number;
@@ -48,6 +49,7 @@ type ApiResponse = {
 export default function ProductPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { addToCart } = useCart();
 
 	const pageFromUrl = parseInt(searchParams.get('page') || '1');
 	const limitFromUrl = parseInt(searchParams.get('limit') || '10');
@@ -71,42 +73,42 @@ export default function ProductPage() {
 		router.push(`?${params.toString()}`, { scroll: false });
 	};
 
-	const fetchProducts = async (page: number = 1, limit: number = 8) => {
-		try {
-			setLoading(true);
-			setError(null);
-
-			const params = new URLSearchParams({
-				page: page.toString(),
-				limit: limit.toString()
-			});
-
-			const response = await fetch(`/api/produk?${params.toString()}`);
-
-			if (!response.ok) throw new Error('Gagal memuat data produk');
-
-			const data: ApiResponse = await response.json();
-
-			setProducts(data.data);
-			setPagination({
-				currentPage: data.pagination.currentPage,
-				totalItems: data.pagination.totalItems,
-				totalPages: data.pagination.totalPages
-			});
-
-			updateUrlParams(data.pagination.currentPage, limit);
-		} catch (err) {
-			console.error('Error fetching products:', err);
-			setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
-			toast.error('Gagal memuat produk');
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	useEffect(() => {
+		const fetchProducts = async (page: number = 1, limit: number = 8) => {
+			try {
+				setLoading(true);
+				setError(null);
+
+				const params = new URLSearchParams({
+					page: page.toString(),
+					limit: limit.toString()
+				});
+
+				const response = await fetch(`/api/produk?${params.toString()}`);
+
+				if (!response.ok) throw new Error('Gagal memuat data produk');
+
+				const data: ApiResponse = await response.json();
+
+				setProducts(data.data);
+				setPagination({
+					currentPage: data.pagination.currentPage,
+					totalItems: data.pagination.totalItems,
+					totalPages: data.pagination.totalPages
+				});
+
+				updateUrlParams(data.pagination.currentPage, limit);
+			} catch (err) {
+				console.error('Error fetching products:', err);
+				setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
+				toast.error('Gagal memuat produk');
+			} finally {
+				setLoading(false);
+			}
+		};
+
 		fetchProducts(pageFromUrl, limitFromUrl);
-	}, [pageFromUrl, limitFromUrl]);
+	}, [pageFromUrl, limitFromUrl, router]);
 
 	const filteredProducts = products
 		.filter((p) => p.nama_produk.toLowerCase().includes(search.toLowerCase()))
@@ -114,6 +116,16 @@ export default function ProductPage() {
 
 	const toggleSortOrder = () => {
 		setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+	};
+
+	const handleAddToCart = (product: Product) => {
+		addToCart({
+			id: product.id_produk,
+			name: product.nama_produk,
+			price: product.harga,
+			image: product.gambar_url || '/placeholder.png'
+		});
+		toast.success(`${product.nama_produk} berhasil ditambahkan ke keranjang!`);
 	};
 
 	return (
@@ -158,7 +170,7 @@ export default function ProductPage() {
 			) : error ? (
 				<div className="text-center py-8">
 					<p className="text-red-600 mb-4">{error}</p>
-					<Button onClick={() => fetchProducts(pageFromUrl, limitFromUrl)}>Coba Lagi</Button>
+					<Button onClick={() => window.location.reload()}>Coba Lagi</Button>
 				</div>
 			) : (
 				<>
@@ -169,10 +181,8 @@ export default function ProductPage() {
 									key={p.id_produk}
 									image={p.gambar_url || '/placeholder.png'}
 									name={p.nama_produk}
-									price={p.harga.toLocaleString('id-ID')}
-									onAddToCart={() =>
-										toast.success(`${p.nama_produk} berhasil ditambahkan ke keranjang!`)
-									}
+									price={p.harga}
+									onAddToCart={() => handleAddToCart(p)}
 								/>
 							))}
 						</div>

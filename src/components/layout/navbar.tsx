@@ -22,11 +22,16 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger
 } from '../ui/dropdown-menu';
+import { Badge } from '../ui/badge';
+import { useCart } from '@/context/CartContext';
 
 export function Navbar() {
 	const [isOpen, setIsOpen] = useState(false);
 	const pathname = usePathname();
 	const { data: session, status } = useSession();
+
+	const { getTotalItems } = useCart();
+	const totalItems = getTotalItems();
 
 	const navItems = [
 		{ title: 'Beranda', href: '/' },
@@ -108,6 +113,11 @@ export function Navbar() {
 											size={20}
 											className={pathname === '/keranjang' ? 'text-white' : ''}
 										/>
+										{totalItems > 0 && (
+											<Badge className="absolute ml-1 mt-[-8px] h-6 min-w-6 rounded-full px-1.5 font-mono text-xs bg-red-500 hover:bg-red-600 border-2 border-white">
+												{totalItems}
+											</Badge>
+										)}
 									</button>
 								</Link>
 								<DropdownMenu>
