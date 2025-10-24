@@ -270,12 +270,9 @@ export default function PembayaranPage() {
 			if (data.success && data.token && window.snap) {
 				window.snap.pay(data.token, {
 					onSuccess: function (result: any) {
-						toast.success('Pembayaran berhasil!', {
-							description: 'Pesanan Anda sedang diproses'
-						});
 						console.log('Success:', result);
 						clearCart();
-						router.push('/riwayat-pesanan');
+						router.push('/pembayaran-berhasil');
 					},
 					onPending: function (result: any) {
 						toast.info('Menunggu Pembayaran', {
@@ -283,20 +280,15 @@ export default function PembayaranPage() {
 								'Silakan selesaikan pembayaran Anda. Status pembayaran akan diperbarui secara otomatis.'
 						});
 						console.log('Pending:', result);
-						// Tetap di halaman pembayaran untuk pending
 					},
 					onError: function (result: any) {
-						toast.error('Pembayaran Gagal!', {
-							description: 'Terjadi kesalahan saat memproses pembayaran'
-						});
 						console.log('Error:', result);
-						// Tetap di halaman pembayaran
+						router.push('/pembayaran-gagal');
 					},
 					onClose: function () {
 						toast.warning('Pembayaran Dibatalkan', {
 							description: 'Anda menutup halaman pembayaran'
 						});
-						// Tetap di halaman pembayaran
 					}
 				});
 			} else {
@@ -388,7 +380,7 @@ export default function PembayaranPage() {
 				{/* Main Content */}
 				<div className="lg:col-span-2 space-y-6">
 					{/* Step 1: Tipe Pengambilan */}
-					<Card>
+					<Card className="border border-gray-200 rounded-lg shadow-none">
 						<CardHeader>
 							<StepIndicator
 								stepNum={1}
@@ -462,7 +454,7 @@ export default function PembayaranPage() {
 									<Button
 										onClick={handleNextStep}
 										disabled={!canProceedFromStep1}
-										className="w-full mt-6 cursor-pointer"
+										className="w-full mt-6 cursor-pointer h-10"
 									>
 										Lanjutkan
 									</Button>
@@ -473,7 +465,7 @@ export default function PembayaranPage() {
 
 					{/* Step 2: Alamat */}
 					{fulfillmentType === 'delivery' && (
-						<Card>
+						<Card className="border border-gray-200 rounded-lg shadow-none">
 							<CardHeader>
 								<StepIndicator
 									stepNum={2}
@@ -539,14 +531,14 @@ export default function PembayaranPage() {
 													<Button
 														onClick={() => setCurrentStep(1)}
 														variant="outline"
-														className="flex-1 cursor-pointer"
+														className="flex-1 cursor-pointer h-10"
 													>
 														Kembali
 													</Button>
 													<Button
 														onClick={fetchShippingCosts}
 														disabled={loadingShipping}
-														className="flex-1 cursor-pointer"
+														className="flex-1 cursor-pointer h-10"
 													>
 														{loadingShipping ? (
 															<>
@@ -572,7 +564,7 @@ export default function PembayaranPage() {
 												</p>
 												<Button
 													onClick={() => (window.location.href = '/settings')}
-													className="cursor-pointer"
+													className="cursor-pointer h-10"
 												>
 													Lengkapi Alamat
 												</Button>
@@ -586,7 +578,7 @@ export default function PembayaranPage() {
 
 					{/* Step 3: Pilih Pengiriman */}
 					{fulfillmentType === 'delivery' && (
-						<Card>
+						<Card className="border border-gray-200 rounded-lg shadow-none">
 							<CardHeader>
 								<StepIndicator
 									stepNum={3}
@@ -616,7 +608,7 @@ export default function PembayaranPage() {
 												<Button
 													onClick={fetchShippingCosts}
 													variant="outline"
-													className="border-red-300 text-red-700 hover:bg-red-50"
+													className="border-red-300 text-red-700 hover:bg-red-50 h-10"
 												>
 													Coba Lagi
 												</Button>
@@ -675,7 +667,7 @@ export default function PembayaranPage() {
 												<Button
 													onClick={handlePayment}
 													disabled={!selectedShipping || loadingPayment}
-													className="w-full cursor-pointer"
+													className="w-full cursor-pointer h-10"
 												>
 													{loadingPayment ? (
 														<>
@@ -703,7 +695,7 @@ export default function PembayaranPage() {
 												<Button
 													onClick={() => setCurrentStep(2)}
 													variant="outline"
-													className="flex-1 cursor-pointer"
+													className="flex-1 cursor-pointer h-10"
 												>
 													Kembali
 												</Button>
@@ -733,7 +725,7 @@ export default function PembayaranPage() {
 									</div>
 								</div>
 								<Button
-									className="w-full cursor-pointer"
+									className="w-full cursor-pointer h-10"
 									onClick={handlePayment}
 									disabled={loadingPayment}
 								>
@@ -753,7 +745,7 @@ export default function PembayaranPage() {
 
 				{/* Sidebar: Order Summary */}
 				<div>
-					<Card className="sticky top-4">
+					<Card className="sticky top-4 border border-gray-200 rounded-lg shadow-none">
 						<CardHeader>
 							<CardTitle className="text-lg">Ringkasan Pesanan</CardTitle>
 						</CardHeader>

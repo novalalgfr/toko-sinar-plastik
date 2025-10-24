@@ -35,7 +35,7 @@ export default function KeranjangPage() {
 	return (
 		<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 			<div className="lg:col-span-2">
-				<Card className="p-0 gap-0">
+				<Card className="p-0 gap-0 border border-gray-200 rounded-lg shadow-none">
 					{cartItems.length > 0 ? (
 						<>
 							{/* Header Pilih Semua */}
@@ -64,10 +64,12 @@ export default function KeranjangPage() {
 
 							{/* Daftar Item */}
 							<div className="px-6">
-								{cartItems.map((item) => (
+								{cartItems.map((item, index) => (
 									<div
 										key={item.id}
-										className="px-0 py-4 border-b flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
+										className={`px-0 py-4 flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50 ${
+											index < cartItems.length - 1 ? 'border-b' : ''
+										}`}
 									>
 										{/* Checkbox + Gambar */}
 										<div className="flex-shrink-0 flex items-center gap-4">
@@ -142,7 +144,7 @@ export default function KeranjangPage() {
 
 			{/* Ringkasan Belanja */}
 			<div className="lg:col-span-1">
-				<Card className="sticky top-4">
+				<Card className="sticky top-4 border border-gray-200 rounded-lg shadow-none">
 					<CardHeader>
 						<CardTitle className="text-lg">Ringkasan Belanja</CardTitle>
 					</CardHeader>
@@ -162,7 +164,7 @@ export default function KeranjangPage() {
 						{/* Button */}
 						<Button
 							disabled={checkedCount === 0}
-							className="w-full"
+							className="w-full h-10"
 							onClick={handleCheckout}
 						>
 							<ShoppingCart className="w-5 h-5" />
