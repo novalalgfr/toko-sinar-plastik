@@ -1,11 +1,11 @@
 'use client';
 
-import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingCart, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCart } from '@/context/CartContext';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
 export default function KeranjangPage() {
@@ -33,7 +33,7 @@ export default function KeranjangPage() {
 	};
 
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+		<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 			<div className="lg:col-span-2">
 				<Card className="p-0 gap-0">
 					{cartItems.length > 0 ? (
@@ -142,21 +142,24 @@ export default function KeranjangPage() {
 
 			{/* Ringkasan Belanja */}
 			<div className="lg:col-span-1">
-				<Card className="p-0 sticky top-12">
-					<div className="p-6 sticky top-12">
-						<h2 className="font-bold text-xl text-gray-900 mb-6">Ringkasan Belanja</h2>
-
-						<div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-							<div className="flex justify-between text-gray-600">
-								<span>Subtotal ({checkedCount} produk)</span>
-								<span className="font-medium text-gray-900">{formatCurrency(total)}</span>
-							</div>
+				<Card className="sticky top-4">
+					<CardHeader>
+						<CardTitle className="text-lg">Ringkasan Belanja</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						{/* Subtotal */}
+						<div className="flex justify-between text-sm pb-4">
+							<span className="text-gray-600">Subtotal ({checkedCount} produk)</span>
+							<span className="font-medium">{formatCurrency(total)}</span>
 						</div>
 
-						<div className="flex justify-between items-center mb-6">
-							<span className="font-bold text-base text-gray-900">Total</span>
-							<span className="text-base font-bold text-indigo-600">{formatCurrency(total)}</span>
+						{/* Total */}
+						<div className="flex justify-between pt-4 border-t-2 font-bold text-lg">
+							<span>Total</span>
+							<span className="text-blue-600">{formatCurrency(total)}</span>
 						</div>
+
+						{/* Button */}
 						<Button
 							disabled={checkedCount === 0}
 							className="w-full"
@@ -165,7 +168,18 @@ export default function KeranjangPage() {
 							<ShoppingCart className="w-5 h-5" />
 							Lanjut Pembayaran ({checkedCount})
 						</Button>
-					</div>
+
+						{/* Info */}
+						<div className="bg-blue-50 border border-blue-200 rounded p-3">
+							<div className="flex gap-2 text-xs text-blue-700">
+								<AlertCircle
+									size={16}
+									className="flex-shrink-0 mt-0.5"
+								/>
+								<p>Pastikan semua data sudah benar sebelum melanjutkan pembayaran.</p>
+							</div>
+						</div>
+					</CardContent>
 				</Card>
 			</div>
 		</div>
