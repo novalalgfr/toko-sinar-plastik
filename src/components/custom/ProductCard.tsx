@@ -29,7 +29,7 @@ export function ProductCard({
 
 	return (
 		<div
-			className={`group relative w-full bg-white rounded-2xl overflow-hidden transition-all duration-300 border border-gray-200/60 hover:border-[#0a452f]/30 hover:shadow-xl ${className}`}
+			className={`group relative w-full bg-white rounded-2xl overflow-hidden transition-all duration-300 border border-gray-200/60 hover:shadow-md transition-shadow ${className}`}
 		>
 			<div
 				className="relative w-full h-[240px] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden cursor-pointer"
