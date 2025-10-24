@@ -98,7 +98,7 @@ export default function OrderDetail({ order, onBack }: OrderDetailProps) {
 	}, [order]);
 
 	const statusColors: { [key: string]: string } = {
-		pending: 'bg-yellow-100 text-yellow-800',
+		// pending: 'bg-yellow-100 text-yellow-800',
 		paid: 'bg-blue-100 text-blue-800',
 		processing: 'bg-purple-100 text-purple-800',
 		shipped: 'bg-orange-100 text-orange-800',
@@ -107,11 +107,11 @@ export default function OrderDetail({ order, onBack }: OrderDetailProps) {
 	};
 
 	const statusLabels: { [key: string]: string } = {
-		pending: 'Menunggu Pembayaran',
-		paid: 'Dibayar',
-		processing: 'Diproses',
-		shipped: 'Dikirim',
-		delivered: 'Selesai',
+		// pending: 'Menunggu Pembayaran',
+		paid: 'Pembayaran Dikonfirmasi',
+		processing: 'Barang Dikemas',
+		shipped: 'Dalam Pengiriman',
+		delivered: 'Barang Diterima',
 		cancelled: 'Dibatalkan'
 	};
 

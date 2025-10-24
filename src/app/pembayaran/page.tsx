@@ -288,7 +288,6 @@ export default function PembayaranPage() {
 					onSuccess: async function (result: any) {
 						console.log('✅ Pembayaran Berhasil:', result);
 
-						// 🔥 SETELAH BAYAR SUKSES, BARU SIMPAN KE DATABASE
 						try {
 							const pesananData = {
 								id_pesanan: orderId,
@@ -296,7 +295,7 @@ export default function PembayaranPage() {
 								nomor_telpon: userAddress?.nomor_telepon || '08123456789',
 								email: userAddress?.email || null,
 								alamat: fullAddress,
-								status_pemesanan: 'Diproses', // Status langsung Diproses karena sudah bayar
+								status_pemesanan: 'Pembayaran Dikonfirmasi',
 								kurir:
 									fulfillmentType === 'delivery'
 										? selectedShipping?.courier || 'Lainnya'

@@ -39,11 +39,14 @@ interface DataTableProps<TData, TValue> {
 	emptyMessage?: string;
 	onAdd?: () => void;
 	addLabel?: string;
-	// Props baru untuk URL pagination
+	// Props untuk URL pagination
 	useUrlPagination?: boolean;
 	totalItems?: number;
 	currentPage?: number;
 	onPageChange?: (page: number) => void;
+	// Props untuk controlled search
+	searchValue?: string;
+	onSearchChange?: (value: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -62,7 +65,9 @@ export function DataTable<TData, TValue>({
 	useUrlPagination = false,
 	totalItems,
 	currentPage: externalCurrentPage,
-	onPageChange
+	onPageChange,
+	searchValue: controlledSearchValue,
+	onSearchChange
 }: DataTableProps<TData, TValue>) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -73,6 +78,13 @@ export function DataTable<TData, TValue>({
 
 	// State untuk internal pagination (jika tidak pakai URL)
 	const [internalPage, setInternalPage] = React.useState(0);
+
+	// State untuk internal search (jika tidak controlled)
+	const [internalSearchValue, setInternalSearchValue] = React.useState('');
+
+	// Tentukan apakah search controlled atau tidak
+	const isSearchControlled = controlledSearchValue !== undefined && onSearchChange !== undefined;
+	const currentSearchValue = isSearchControlled ? controlledSearchValue : internalSearchValue;
 
 	// Effect untuk set default URL params saat pertama kali mount
 	React.useEffect(() => {
@@ -99,6 +111,7 @@ export function DataTable<TData, TValue>({
 		getFilteredRowModel: getFilteredRowModel(),
 		onColumnVisibilityChange: setColumnVisibility,
 		manualPagination: useUrlPagination, // Jika pakai URL, pagination manual
+		manualFiltering: isSearchControlled, // Jika search controlled, filtering manual
 		pageCount: useUrlPagination && totalItems ? Math.ceil(totalItems / pageSize) : undefined,
 		initialState: {
 			pagination: {
@@ -123,6 +136,18 @@ export function DataTable<TData, TValue>({
 		params.set('page', page.toString());
 		params.set('limit', pageSize.toString());
 		router.push(`?${params.toString()}`, { scroll: false });
+	};
+
+	// Handler untuk search
+	const handleSearchChange = (value: string) => {
+		if (isSearchControlled) {
+			// Controlled: call parent handler
+			onSearchChange(value);
+		} else {
+			// Uncontrolled: update internal state dan table filter
+			setInternalSearchValue(value);
+			table.getColumn(searchKey as string)?.setFilterValue(value);
+		}
 	};
 
 	// Handler untuk previous page
@@ -210,10 +235,8 @@ export function DataTable<TData, TValue>({
 								<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 								<Input
 									placeholder={searchPlaceholder}
-									value={(table.getColumn(searchKey as string)?.getFilterValue() as string) ?? ''}
-									onChange={(event) =>
-										table.getColumn(searchKey as string)?.setFilterValue(event.target.value)
-									}
+									value={currentSearchValue}
+									onChange={(event) => handleSearchChange(event.target.value)}
 									className="pl-8 max-w-sm"
 								/>
 							</div>
@@ -322,7 +345,7 @@ export function DataTable<TData, TValue>({
 
 			{/* Pagination */}
 			{showPagination && (
-				<div className="flex items-center justify-end space-x-2 py-4">
+				<div className="flex items-center justify-end space-x-2 pt-4">
 					<div className="flex-1 text-sm text-muted-foreground">
 						{paginationInfo.total > 0 ? (
 							<>
