@@ -2,12 +2,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Truck, Store, CheckCircle2, Clock, AlertCircle, Loader2, XCircle, MapPin, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCart } from '@/context/CartContext';
 
 interface UserAddress {
 	alamat: string;
@@ -29,14 +31,6 @@ interface ShippingOption {
 	cost: number;
 	etd: string;
 	displayName: string;
-}
-
-interface CartItem {
-	id: number;
-	name: string;
-	quantity: number;
-	price: number;
-	weight: number;
 }
 
 interface StepIndicatorProps {
@@ -62,7 +56,13 @@ declare global {
 	}
 }
 
-export default function CheckoutPage() {
+export default function PembayaranPage() {
+	const router = useRouter();
+	const { getCheckedItems, getTotal, getTotalWeight, clearCart } = useCart();
+
+	// Get checked items from cart
+	const checkedCartItems = getCheckedItems();
+
 	const STORE_CONFIG = {
 		originDestinationId: 31597,
 		originPinPoint: '-7.279849431298132,109.35114360314475',
@@ -80,13 +80,19 @@ export default function CheckoutPage() {
 	const [shippingError, setShippingError] = useState<boolean>(false);
 	const [loadingPayment, setLoadingPayment] = useState<boolean>(false);
 
-	// Data produk - satu item dengan berat 1kg
-	const cartItems: CartItem[] = [{ id: 1, name: 'Produk A', quantity: 1, price: 30000, weight: 1 }];
-
-	const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-	const totalWeight = cartItems.reduce((sum, item) => sum + item.weight * item.quantity, 0);
+	// Calculate totals from cart
+	const subtotal = getTotal();
+	const totalWeight = getTotalWeight();
 	const shippingCost = selectedShipping ? selectedShipping.cost : 0;
 	const total = subtotal + shippingCost;
+
+	// Redirect if cart is empty
+	useEffect(() => {
+		if (checkedCartItems.length === 0) {
+			toast.error('Keranjang belanja kosong!');
+			router.push('/keranjang');
+		}
+	}, [checkedCartItems, router]);
 
 	// Validasi step
 	const canProceedFromStep1 = fulfillmentType;
@@ -103,7 +109,6 @@ export default function CheckoutPage() {
 
 				const data = await res.json();
 
-				// Set user address jika data lengkap
 				if (data.alamat && data.latitude && data.longitude) {
 					setUserAddress({
 						alamat: data.alamat || '',
@@ -117,23 +122,11 @@ export default function CheckoutPage() {
 						longitude: parseFloat(data.longitude) || 0
 					});
 				} else {
-					toast.error('Alamat belum lengkap. Silakan lengkapi profil Anda.', {
-						style: {
-							background: '#ef4444',
-							color: '#ffffff',
-							border: 'none'
-						}
-					});
+					toast.error('Alamat belum lengkap. Silakan lengkapi profil Anda.');
 				}
 			} catch (error) {
 				console.error('Error fetching user address:', error);
-				toast.error('Gagal memuat alamat. Silakan coba lagi.', {
-					style: {
-						background: '#ef4444',
-						color: '#ffffff',
-						border: 'none'
-					}
-				});
+				toast.error('Gagal memuat alamat. Silakan coba lagi.');
 			} finally {
 				setLoadingAddress(false);
 			}
@@ -142,7 +135,7 @@ export default function CheckoutPage() {
 		fetchUserAddress();
 	}, []);
 
-	// Fetch ongkir dari RajaOngkir ketika alamat dipilih
+	// Fetch ongkir dari RajaOngkir
 	useEffect(() => {
 		if (userAddress && fulfillmentType === 'delivery' && currentStep === 2) {
 			fetchShippingCosts();
@@ -161,8 +154,6 @@ export default function CheckoutPage() {
 				throw new Error('Address not found');
 			}
 
-			// Note: Anda perlu mendapatkan cityId dari koordinat atau dari data tambahan
-			// Untuk sementara gunakan default atau tambahkan field cityId di database
 			const cityId = 46116; // Default cityId Purbalingga
 
 			const response = await fetch('/api/rajaongkir/calculate', {
@@ -210,17 +201,17 @@ export default function CheckoutPage() {
 		setLoadingPayment(true);
 
 		try {
-			// Siapkan item details
+			// Convert cart items to Midtrans format
 			const itemDetails = [
-				...cartItems.map((item) => ({
+				...checkedCartItems.map((item) => ({
 					id: item.id.toString(),
 					price: item.price,
-					quantity: item.quantity,
+					quantity: item.qty,
 					name: item.name
 				}))
 			];
 
-			// Tambahkan ongkir jika delivery
+			// Add shipping cost if delivery
 			if (fulfillmentType === 'delivery' && selectedShipping) {
 				itemDetails.push({
 					id: 'SHIPPING',
@@ -230,7 +221,7 @@ export default function CheckoutPage() {
 				});
 			}
 
-			// Format alamat lengkap
+			// Format address
 			const fullAddress = userAddress
 				? `${userAddress.alamat}${
 						userAddress.rt || userAddress.rw
@@ -241,7 +232,7 @@ export default function CheckoutPage() {
 				  }`
 				: 'Alamat tidak tersedia';
 
-			// Siapkan data untuk Midtrans
+			// Prepare order data
 			const orderData = {
 				transaction_details: {
 					order_id: `ORDER-${Date.now()}`,
@@ -265,7 +256,7 @@ export default function CheckoutPage() {
 						: null
 			};
 
-			// Panggil API Midtrans
+			// Call Midtrans API
 			const response = await fetch('/api/midtrans/create-transaction', {
 				method: 'POST',
 				headers: {
@@ -277,24 +268,24 @@ export default function CheckoutPage() {
 			const data = await response.json();
 
 			if (data.success && data.token && window.snap) {
-				// Redirect ke Midtrans Snap
 				window.snap.pay(data.token, {
 					onSuccess: function (result: any) {
-						alert('Pembayaran berhasil!');
+						toast.success('Pembayaran berhasil!');
 						console.log(result);
-						window.location.href = '/order-success';
+						clearCart();
+						router.push('/order-success');
 					},
 					onPending: function (result: any) {
-						alert('Menunggu pembayaran!');
+						toast.info('Menunggu pembayaran!');
 						console.log(result);
-						window.location.href = '/order-pending';
+						router.push('/order-pending');
 					},
 					onError: function (result: any) {
-						alert('Pembayaran gagal!');
+						toast.error('Pembayaran gagal!');
 						console.log(result);
 					},
 					onClose: function () {
-						alert('Anda menutup popup pembayaran');
+						toast.warning('Popup pembayaran ditutup');
 					}
 				});
 			} else {
@@ -302,7 +293,7 @@ export default function CheckoutPage() {
 			}
 		} catch (error) {
 			console.error('Error creating transaction:', error);
-			alert('Terjadi kesalahan saat memproses pembayaran');
+			toast.error('Terjadi kesalahan saat memproses pembayaran');
 		} finally {
 			setLoadingPayment(false);
 		}
@@ -351,7 +342,6 @@ export default function CheckoutPage() {
 		};
 	}, []);
 
-	// Format alamat untuk display
 	const getFormattedAddress = () => {
 		if (!userAddress) return '';
 
@@ -372,8 +362,17 @@ export default function CheckoutPage() {
 		return address;
 	};
 
+	// Show loading if cart is empty
+	if (checkedCartItems.length === 0) {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+			</div>
+		);
+	}
+
 	return (
-		<div className="min-h-screen bg-gray-50 py-8">
+		<div className="min-h-screen bg-gray-50">
 			<div className="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Main Content */}
 				<div className="lg:col-span-2 space-y-6">
@@ -461,7 +460,7 @@ export default function CheckoutPage() {
 						)}
 					</Card>
 
-					{/* Step 2: Alamat (Dari API) */}
+					{/* Step 2: Alamat */}
 					{fulfillmentType === 'delivery' && (
 						<Card>
 							<CardHeader>
@@ -485,21 +484,18 @@ export default function CheckoutPage() {
 												<div className="p-5 border rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-sm hover:shadow-md transition-shadow duration-200">
 													<div className="flex items-start justify-between gap-4">
 														<div className="flex-1 min-w-0">
-															{/* Header */}
 															<div className="flex items-center gap-2 mb-3">
 																<h3 className="font-semibold text-gray-900">
 																	Alamat Pengiriman
 																</h3>
 															</div>
 
-															{/* Main Address */}
 															<div className="mb-3">
 																<p className="text-sm text-gray-800 leading-relaxed">
 																	{getFormattedAddress()}
 																</p>
 															</div>
 
-															{/* Map Address */}
 															{userAddress.alamat_peta && (
 																<div className="flex items-start gap-2.5 py-1 rounded-lg mb-2.5">
 																	<MapPin
@@ -512,7 +508,6 @@ export default function CheckoutPage() {
 																</div>
 															)}
 
-															{/* Phone Number */}
 															{userAddress.nomor_telepon && (
 																<div className="flex items-center gap-2.5 py-1 rounded-lg">
 																	<Phone
@@ -665,7 +660,6 @@ export default function CheckoutPage() {
 												</div>
 											</RadioGroup>
 
-											{/* Tombol Pembayaran */}
 											<div className="mt-6">
 												<Button
 													onClick={handlePayment}
@@ -709,7 +703,7 @@ export default function CheckoutPage() {
 						</Card>
 					)}
 
-					{/* Store Pickup - Langsung Pembayaran */}
+					{/* Store Pickup */}
 					{fulfillmentType === 'store' && currentStep >= 2 && (
 						<Card>
 							<CardHeader>
@@ -755,16 +749,16 @@ export default function CheckoutPage() {
 						<CardContent className="space-y-4">
 							{/* Items */}
 							<div className="space-y-3 pb-4 border-b">
-								{cartItems.map((item) => (
+								{checkedCartItems.map((item) => (
 									<div
 										key={item.id}
 										className="flex justify-between text-sm"
 									>
 										<span className="text-gray-600">
-											{item.name} x{item.quantity}
+											{item.name} x{item.qty}
 										</span>
 										<span className="font-medium">
-											Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+											Rp {(item.price * item.qty).toLocaleString('id-ID')}
 										</span>
 									</div>
 								))}

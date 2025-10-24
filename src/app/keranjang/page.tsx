@@ -3,11 +3,13 @@
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox'; // ✅ tambahkan ini
+import { Checkbox } from '@/components/ui/checkbox';
 import { useCart } from '@/context/CartContext';
 import { Card } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
 
 export default function KeranjangPage() {
+	const router = useRouter();
 	const { cartItems, toggleCheck, selectAll, removeFromCart, deleteSelected, updateQty, getCheckedItems, getTotal } =
 		useCart();
 
@@ -25,10 +27,15 @@ export default function KeranjangPage() {
 		}).format(amount);
 	};
 
+	const handleCheckout = () => {
+		if (checkedCount === 0) return;
+		router.push('/pembayaran');
+	};
+
 	return (
 		<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
 			<div className="lg:col-span-2">
-				<Card className="p-0">
+				<Card className="p-0 gap-0">
 					{cartItems.length > 0 ? (
 						<>
 							{/* Header Pilih Semua */}
@@ -60,7 +67,7 @@ export default function KeranjangPage() {
 								{cartItems.map((item) => (
 									<div
 										key={item.id}
-										className="p-4 md:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
+										className="px-6 py-4 flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
 									>
 										{/* Checkbox + Gambar */}
 										<div className="flex-shrink-0 flex items-center gap-4">
@@ -153,6 +160,7 @@ export default function KeranjangPage() {
 						<Button
 							disabled={checkedCount === 0}
 							className="w-full"
+							onClick={handleCheckout}
 						>
 							<ShoppingCart className="w-5 h-5" />
 							Lanjut Pembayaran ({checkedCount})

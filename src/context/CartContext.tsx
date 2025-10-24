@@ -8,11 +8,12 @@ interface CartItem {
 	checked: boolean;
 	image: string;
 	qty: number;
+	weight: number;
 }
 
 interface CartContextType {
 	cartItems: CartItem[];
-	addToCart: (product: { id: number; name: string; price: number; image: string }) => void;
+	addToCart: (product: { id: number; name: string; price: number; image: string; weight?: number }) => void;
 	removeFromCart: (id: number) => void;
 	updateQty: (id: number, change: number) => void;
 	toggleCheck: (id: number) => void;
@@ -21,6 +22,7 @@ interface CartContextType {
 	getTotalItems: () => number;
 	getCheckedItems: () => CartItem[];
 	getTotal: () => number;
+	getTotalWeight: () => number;
 	clearCart: () => void;
 }
 
@@ -51,7 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 		}
 	}, [cartItems]);
 
-	const addToCart = (product: { id: number; name: string; price: number; image: string }) => {
+	const addToCart = (product: { id: number; name: string; price: number; image: string; weight?: number }) => {
 		setCartItems((prev) => {
 			const existing = prev.find((item) => item.id === product.id);
 			if (existing) {
@@ -65,7 +67,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 					price: product.price,
 					image: product.image,
 					qty: 1,
-					checked: true
+					checked: true,
+					weight: product.weight || 1
 				}
 			];
 		});
@@ -111,6 +114,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 		return cartItems.filter((item) => item.checked).reduce((sum, item) => sum + item.price * item.qty, 0);
 	};
 
+	const getTotalWeight = () => {
+		return cartItems.filter((item) => item.checked).reduce((sum, item) => sum + (item.weight || 1) * item.qty, 0);
+	};
+
 	const clearCart = () => {
 		setCartItems([]);
 	};
@@ -128,6 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 				getTotalItems,
 				getCheckedItems,
 				getTotal,
+				getTotalWeight,
 				clearCart
 			}}
 		>
@@ -144,3 +152,6 @@ export function useCart() {
 	}
 	return context;
 }
+
+// Hanya export CartProvider dan useCart hook
+// Tidak ada komponen demo, langsung gunakan di aplikasi Anda

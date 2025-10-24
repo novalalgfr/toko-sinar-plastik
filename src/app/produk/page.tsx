@@ -123,7 +123,8 @@ export default function ProductPage() {
 			id: product.id_produk,
 			name: product.nama_produk,
 			price: product.harga,
-			image: product.gambar_url || '/placeholder.png'
+			image: product.gambar_url || '/placeholder.png',
+			weight: product.berat || 1
 		});
 		toast.success(`${product.nama_produk} berhasil ditambahkan ke keranjang!`);
 	};
