@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { useCart } from '@/context/CartContext';
 
 interface UserAddress {
+	name: string;
+	email: string;
 	alamat: string;
 	alamat_peta: string;
 	rt: string;
@@ -108,9 +110,12 @@ export default function PembayaranPage() {
 				if (!res.ok) throw new Error('Gagal memuat alamat pengguna');
 
 				const data = await res.json();
+				console.log('🚀 ~ fetchUserAddress ~ data:', data);
 
 				if (data.alamat && data.latitude && data.longitude) {
 					setUserAddress({
+						name: data.name || '',
+						email: data.email || '',
 						alamat: data.alamat || '',
 						alamat_peta: data.alamat_peta || '',
 						rt: data.rt || '',
@@ -201,7 +206,28 @@ export default function PembayaranPage() {
 		setLoadingPayment(true);
 
 		try {
-			// Convert cart items to Midtrans format
+			// Generate order ID
+			const orderId = `ORDER-${Date.now()}`;
+
+			// Format address
+			const fullAddress = userAddress
+				? `${userAddress.alamat}${
+						userAddress.rt || userAddress.rw
+							? `, RT ${userAddress.rt || '-'}/RW ${userAddress.rw || '-'}`
+							: ''
+				  }${userAddress.kelurahan ? `, ${userAddress.kelurahan}` : ''}${
+						userAddress.kecamatan ? `, ${userAddress.kecamatan}` : ''
+				  }`
+				: 'Alamat tidak tersedia';
+
+			// Prepare product data for database (simpan untuk nanti)
+			const produkData = checkedCartItems.map((item) => ({
+				id_produk: item.id,
+				harga: item.price,
+				jumlah: item.qty
+			}));
+
+			// 🔥 STEP 1: BUAT TRANSAKSI MIDTRANS DULU
 			const itemDetails = [
 				...checkedCartItems.map((item) => ({
 					id: item.id.toString(),
@@ -221,25 +247,15 @@ export default function PembayaranPage() {
 				});
 			}
 
-			// Format address
-			const fullAddress = userAddress
-				? `${userAddress.alamat}${
-						userAddress.rt || userAddress.rw
-							? `, RT ${userAddress.rt || '-'}/RW ${userAddress.rw || '-'}`
-							: ''
-				  }${userAddress.kelurahan ? `, ${userAddress.kelurahan}` : ''}${
-						userAddress.kecamatan ? `, ${userAddress.kecamatan}` : ''
-				  }`
-				: 'Alamat tidak tersedia';
-
-			// Prepare order data
+			// Prepare order data for Midtrans
 			const orderData = {
 				transaction_details: {
-					order_id: `ORDER-${Date.now()}`,
+					order_id: orderId,
 					gross_amount: total
 				},
 				customer_details: {
-					first_name: 'Customer',
+					first_name: userAddress?.name || 'Customer',
+					email: userAddress?.email || undefined,
 					phone: userAddress?.nomor_telepon || '08123456789',
 					address: fullAddress
 				},
@@ -247,7 +263,7 @@ export default function PembayaranPage() {
 				shipping_address:
 					fulfillmentType === 'delivery' && userAddress
 						? {
-								first_name: 'Customer',
+								first_name: userAddress.name || 'Customer',
 								phone: userAddress.nomor_telepon,
 								address: fullAddress,
 								city: userAddress.kecamatan || 'Unknown',
@@ -269,9 +285,51 @@ export default function PembayaranPage() {
 
 			if (data.success && data.token && window.snap) {
 				window.snap.pay(data.token, {
-					onSuccess: function (result: any) {
-						console.log('Success:', result);
+					onSuccess: async function (result: any) {
+						console.log('✅ Pembayaran Berhasil:', result);
+
+						// 🔥 SETELAH BAYAR SUKSES, BARU SIMPAN KE DATABASE
+						try {
+							const pesananData = {
+								id_pesanan: orderId,
+								nama_pelanggan: userAddress?.name || 'Customer',
+								nomor_telpon: userAddress?.nomor_telepon || '08123456789',
+								email: userAddress?.email || null,
+								alamat: fullAddress,
+								status_pemesanan: 'Diproses', // Status langsung Diproses karena sudah bayar
+								kurir:
+									fulfillmentType === 'delivery'
+										? selectedShipping?.courier || 'Lainnya'
+										: 'Ambil di Toko',
+								no_resi: null,
+								produk: produkData
+							};
+
+							console.log('📤 Menyimpan pesanan ke database:', pesananData);
+
+							const dbResponse = await fetch('/api/pesanan', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify(pesananData)
+							});
+
+							const dbResult = await dbResponse.json();
+
+							if (!dbResponse.ok) {
+								throw new Error(dbResult.message || 'Gagal menyimpan pesanan ke database');
+							}
+
+							console.log('✅ Pesanan berhasil disimpan ke database:', dbResult);
+						} catch (error) {
+							console.error('⚠️ Gagal menyimpan pesanan:', error);
+							toast.error('Pembayaran berhasil, tapi pesanan gagal disimpan. Hubungi admin.');
+						}
+
+						// Clear cart dan redirect
 						clearCart();
+						toast.success('Pembayaran berhasil! Pesanan Anda sedang diproses.');
 						router.push('/pembayaran-berhasil');
 					},
 					onPending: function (result: any) {
@@ -279,10 +337,11 @@ export default function PembayaranPage() {
 							description:
 								'Silakan selesaikan pembayaran Anda. Status pembayaran akan diperbarui secara otomatis.'
 						});
-						console.log('Pending:', result);
+						console.log('⏳ Pending:', result);
 					},
 					onError: function (result: any) {
-						console.log('Error:', result);
+						console.log('❌ Error:', result);
+						toast.error('Pembayaran gagal. Silakan coba lagi.');
 						router.push('/pembayaran-gagal');
 					},
 					onClose: function () {
@@ -295,7 +354,7 @@ export default function PembayaranPage() {
 				throw new Error(data.error || 'Failed to create transaction');
 			}
 		} catch (error) {
-			console.error('Error creating transaction:', error);
+			console.error('❌ Error creating transaction:', error);
 			toast.error('Terjadi kesalahan saat memproses pembayaran');
 		} finally {
 			setLoadingPayment(false);

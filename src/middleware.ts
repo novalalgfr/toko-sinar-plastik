@@ -1,4 +1,4 @@
-// middleware.ts (di root project)
+// middleware.ts
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
@@ -22,17 +22,22 @@ export default withAuth(
 		}
 
 		// Fungsi helper untuk cek autentikasi API
-		const checkApiAuth = (apiPath: string) => {
+		const checkApiAuth = (apiPath: string, allowPublicPost = false) => {
 			if (pathname.startsWith(apiPath)) {
 				const method = req.method;
 
-				// GET adalah public, bisa diakses siapa saja
+				// GET adalah public
 				if (method === 'GET') {
 					return NextResponse.next();
 				}
 
-				// POST, PUT, DELETE harus admin
-				if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+				// POST public jika allowPublicPost = true
+				if (method === 'POST' && allowPublicPost) {
+					return NextResponse.next();
+				}
+
+				// POST, PUT, DELETE, PATCH harus admin
+				if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
 					if (!token) {
 						return NextResponse.json(
 							{
@@ -57,11 +62,34 @@ export default withAuth(
 			return null;
 		};
 
-		// Cek autentikasi untuk semua API
-		const apiPaths = ['/api/produk', '/api/beranda', '/api/kontak', '/api/kategori', '/api/pesanan'];
+		// ✅ ALLOW POST untuk /api/pesanan TANPA AUTH (untuk customer buat pesanan)
+		if (pathname.startsWith('/api/pesanan') && req.method === 'POST') {
+			return NextResponse.next();
+		}
 
-		for (const apiPath of apiPaths) {
-			const authResponse = checkApiAuth(apiPath);
+		// ✅ PATCH /api/pesanan TETAP BUTUH ADMIN AUTH
+		if (pathname.startsWith('/api/pesanan') && req.method === 'PATCH') {
+			if (!token || token.role !== 'admin') {
+				return NextResponse.json(
+					{
+						success: false,
+						message: 'Forbidden. Admin access required.'
+					},
+					{ status: 403 }
+				);
+			}
+		}
+
+		// Cek autentikasi untuk API lain
+		const apiChecks = [
+			{ path: '/api/produk', allowPublicPost: false },
+			{ path: '/api/beranda', allowPublicPost: false },
+			{ path: '/api/kontak', allowPublicPost: false },
+			{ path: '/api/kategori', allowPublicPost: false }
+		];
+
+		for (const { path, allowPublicPost } of apiChecks) {
+			const authResponse = checkApiAuth(path, allowPublicPost);
 			if (authResponse) {
 				return authResponse;
 			}
@@ -71,16 +99,15 @@ export default withAuth(
 	},
 	{
 		callbacks: {
-			authorized: ({ token, req }) => {
+			authorized: ({ req }) => {
 				const { pathname } = req.nextUrl;
 
 				// Halaman admin harus login
 				if (pathname.startsWith('/admin')) {
-					return !!token;
+					return true; // Cek token dilakukan di middleware function
 				}
 
-				// Semua API endpoint diizinkan masuk ke middleware
-				// Autentikasi dilakukan di dalam middleware function
+				// Semua API endpoint diizinkan masuk
 				if (
 					pathname.startsWith('/api/produk') ||
 					pathname.startsWith('/api/beranda') ||

@@ -20,7 +20,7 @@ interface Pesanan extends RowDataPacket {
 	email: string | null;
 	alamat: string;
 	tanggal_pesanan: Date;
-	status_pesanan: string;
+	status_pemesanan: string;
 	kurir: string;
 	no_resi: string | null;
 	total_harga?: number;
@@ -31,12 +31,6 @@ interface Pesanan extends RowDataPacket {
 
 interface CountResult extends RowDataPacket {
 	total: number;
-}
-
-interface ProdukInput {
-	id_produk: number;
-	harga: number;
-	jumlah: number;
 }
 
 type QueryParam = string | number | null;
@@ -74,7 +68,7 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get('id');
-		const nama = searchParams.get('nama'); // 👈 Tambah parameter nama pelanggan
+		const nama = searchParams.get('nama');
 
 		// CASE 1: Jika ada parameter ID (by id_pesanan)
 		if (id) {
@@ -85,10 +79,7 @@ export async function GET(request: NextRequest) {
 				return NextResponse.json({ message: 'ID pesanan tidak valid' }, { status: 400 });
 			}
 
-			const [rows] = await db.execute<Pesanan[]>(
-				'SELECT * FROM pesanan WHERE id_pesanan = ?',
-				[pesananId]
-			);
+			const [rows] = await db.execute<Pesanan[]>('SELECT * FROM pesanan WHERE id_pesanan = ?', [pesananId]);
 
 			if (rows.length === 0) {
 				return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
@@ -117,16 +108,12 @@ export async function GET(request: NextRequest) {
 		if (nama) {
 			console.log('📥 Mengambil pesanan dengan nama pelanggan:', nama);
 
-			const [rows] = await db.execute<Pesanan[]>(
-				'SELECT * FROM pesanan WHERE nama_pelanggan = ?',
-				[nama]
-			);
+			const [rows] = await db.execute<Pesanan[]>('SELECT * FROM pesanan WHERE nama_pelanggan = ?', [nama]);
 
 			if (rows.length === 0) {
 				return NextResponse.json({ message: 'Pesanan tidak ditemukan' }, { status: 404 });
 			}
 
-			// Ambil hanya satu pesanan (jika lebih dari satu dengan nama yang sama)
 			const pesanan = rows[0];
 
 			// Ambil detail produk untuk pesanan ini
@@ -180,7 +167,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		if (status) {
-			conditions.push('status_pesanan = ?');
+			conditions.push('status_pemesanan = ?');
 			countParams.push(status);
 			dataParams.push(status);
 		}
@@ -240,71 +227,123 @@ export async function GET(request: NextRequest) {
 }
 
 /* ==========================================================
-   POST — Tambah pesanan baru (Admin Only)
+   POST — Buat pesanan baru (Public)
    ========================================================== */
 export async function POST(request: NextRequest) {
-	const authCheck = await checkAdminAuth(request);
-	if (!authCheck.authenticated) return authCheck.response;
+	let body;
 
 	try {
-		const body = await request.json();
+		body = await request.json();
+		console.log('📥 Raw request body:', JSON.stringify(body, null, 2));
+	} catch (error) {
+		console.error('⚠️ Error parsing JSON:', error);
+		return NextResponse.json(
+			{
+				success: false,
+				message: 'Request body tidak valid atau kosong',
+				errorDetails: error instanceof Error ? error.message : 'Unknown parsing error'
+			},
+			{ status: 400 }
+		);
+	}
+
+	try {
 		const {
+			id_pesanan,
 			nama_pelanggan,
 			nomor_telpon,
 			email,
 			alamat,
-			status_pesanan = 'Pending',
+			status_pemesanan, // ✅ Terima status_pemesanan dari frontend
 			kurir = 'Lainnya',
 			no_resi = null,
 			produk
-		}: {
-			nama_pelanggan: string;
-			nomor_telpon: string;
-			email?: string;
-			alamat: string;
-			status_pesanan?: string;
-			kurir?: string;
-			no_resi?: string | null;
-			produk: ProdukInput[];
 		} = body;
+
+		// Set default status jika tidak ada atau null
+		const finalStatus = status_pemesanan && status_pemesanan !== 'null' ? status_pemesanan : 'Pending';
+
+		console.log('📥 Data pesanan diterima:', {
+			id_pesanan,
+			nama_pelanggan,
+			nomor_telpon,
+			email,
+			alamat,
+			status_pemesanan: finalStatus,
+			kurir,
+			produk
+		});
 
 		// Validasi input
 		if (!nama_pelanggan || !nomor_telpon || !alamat || !produk || produk.length === 0) {
 			return NextResponse.json(
-				{ message: 'Data tidak lengkap. Pastikan nama, nomor telpon, alamat, dan produk terisi.' },
+				{
+					success: false,
+					message: 'Data tidak lengkap. Pastikan nama, nomor telpon, alamat, dan produk terisi.'
+				},
 				{ status: 400 }
 			);
 		}
 
-		// Simpan ke tabel pesanan dulu
-		const [result] = await db.execute<ResultSetHeader>(
-			`INSERT INTO pesanan (nama_pelanggan, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[nama_pelanggan, nomor_telpon, email, alamat, status_pesanan, kurir, no_resi]
+		// Generate ID jika tidak ada
+		const pesananId = id_pesanan || `ORDER-${Date.now()}`;
+
+		console.log('🆔 ID Pesanan yang akan digunakan:', pesananId);
+
+		// ✅ Simpan ke database dengan status_pemesanan
+		await db.execute<ResultSetHeader>(
+			`INSERT INTO pesanan (id_pesanan, nama_pelanggan, nomor_telpon, email, alamat, status_pemesanan, kurir, no_resi)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			[pesananId, nama_pelanggan, nomor_telpon, email || null, alamat, finalStatus, kurir, no_resi]
 		);
 
-		const id_pesanan = result.insertId;
+		console.log('✅ Pesanan berhasil disimpan ke tabel pesanan');
 
 		// Simpan detail produk
 		let total_harga = 0;
 		for (const item of produk) {
-			const subtotal = item.harga * item.jumlah;
+			// ✅ Parse harga jika berupa string (dari database bisa jadi decimal/string)
+			const harga = typeof item.harga === 'string' ? parseFloat(item.harga) : item.harga;
+			const subtotal = harga * item.jumlah;
 			total_harga += subtotal;
+
+			console.log(
+				`📦 Menyimpan produk: ID=${item.id_produk}, Jumlah=${item.jumlah}, Harga=${harga}, Subtotal=${subtotal}`
+			);
 
 			await db.execute(
 				`INSERT INTO detail_pesanan (id_pesanan, id_produk, jumlah, subtotal)
 				 VALUES (?, ?, ?, ?)`,
-				[id_pesanan, item.id_produk, item.jumlah, subtotal]
+				[pesananId, item.id_produk, item.jumlah, subtotal]
 			);
 		}
 
-		// Update total harga di tabel pesanan
-		await db.execute(`UPDATE pesanan SET total_harga = ? WHERE id_pesanan = ?`, [total_harga, id_pesanan]);
+		console.log(`💰 Total harga pesanan: Rp ${total_harga.toLocaleString('id-ID')}`);
 
-		return NextResponse.json({ message: 'Pesanan berhasil dibuat', id_pesanan, total_harga }, { status: 201 });
+		// Update total harga di tabel pesanan
+		await db.execute(`UPDATE pesanan SET total_harga = ? WHERE id_pesanan = ?`, [total_harga, pesananId]);
+
+		console.log('✅ Pesanan berhasil dibuat dengan lengkap');
+
+		return NextResponse.json(
+			{
+				success: true,
+				message: 'Pesanan berhasil dibuat',
+				id_pesanan: pesananId,
+				total_harga
+			},
+			{ status: 201 }
+		);
 	} catch (error) {
-		console.error('Error creating pesanan:', error);
-		return NextResponse.json({ message: 'Gagal menambahkan pesanan' }, { status: 500 });
+		console.error('❌ Error creating pesanan:', error);
+		return NextResponse.json(
+			{
+				success: false,
+				message: 'Gagal menambahkan pesanan',
+				error: error instanceof Error ? error.message : 'Unknown error'
+			},
+			{ status: 500 }
+		);
 	}
 }
 
@@ -319,12 +358,12 @@ export async function PATCH(request: NextRequest) {
 		const body = await request.json();
 		const {
 			id_pesanan,
-			status_pesanan,
+			status_pemesanan,
 			no_resi,
 			kurir
 		}: {
-			id_pesanan: number;
-			status_pesanan?: string;
+			id_pesanan: string;
+			status_pemesanan?: string;
 			no_resi?: string | null;
 			kurir?: string;
 		} = body;
@@ -335,7 +374,7 @@ export async function PATCH(request: NextRequest) {
 
 		// Validasi status pesanan
 		const validStatuses = ['Pending', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'];
-		if (status_pesanan && !validStatuses.includes(status_pesanan)) {
+		if (status_pemesanan && !validStatuses.includes(status_pemesanan)) {
 			return NextResponse.json(
 				{ message: `Status tidak valid. Status yang diperbolehkan: ${validStatuses.join(', ')}` },
 				{ status: 400 }
@@ -353,9 +392,9 @@ export async function PATCH(request: NextRequest) {
 		const updates: string[] = [];
 		const params: QueryParam[] = [];
 
-		if (status_pesanan) {
-			updates.push('status_pesanan = ?');
-			params.push(status_pesanan);
+		if (status_pemesanan) {
+			updates.push('status_pemesanan = ?');
+			params.push(status_pemesanan);
 		}
 
 		if (no_resi !== undefined) {
