@@ -63,11 +63,11 @@ export default function KeranjangPage() {
 							</div>
 
 							{/* Daftar Item */}
-							<div className="divide-y divide-gray-200">
+							<div className="px-6">
 								{cartItems.map((item) => (
 									<div
 										key={item.id}
-										className="px-6 py-4 flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
+										className="px-0 py-4 border-b flex flex-col sm:flex-row gap-4 sm:gap-6 transition-colors hover:bg-gray-50/50"
 									>
 										{/* Checkbox + Gambar */}
 										<div className="flex-shrink-0 flex items-center gap-4">
