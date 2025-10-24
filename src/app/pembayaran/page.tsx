@@ -270,22 +270,33 @@ export default function PembayaranPage() {
 			if (data.success && data.token && window.snap) {
 				window.snap.pay(data.token, {
 					onSuccess: function (result: any) {
-						toast.success('Pembayaran berhasil!');
-						console.log(result);
+						toast.success('Pembayaran berhasil!', {
+							description: 'Pesanan Anda sedang diproses'
+						});
+						console.log('Success:', result);
 						clearCart();
-						router.push('/order-success');
+						router.push('/riwayat-pesanan');
 					},
 					onPending: function (result: any) {
-						toast.info('Menunggu pembayaran!');
-						console.log(result);
-						router.push('/order-pending');
+						toast.info('Menunggu Pembayaran', {
+							description:
+								'Silakan selesaikan pembayaran Anda. Status pembayaran akan diperbarui secara otomatis.'
+						});
+						console.log('Pending:', result);
+						// Tetap di halaman pembayaran untuk pending
 					},
 					onError: function (result: any) {
-						toast.error('Pembayaran gagal!');
-						console.log(result);
+						toast.error('Pembayaran Gagal!', {
+							description: 'Terjadi kesalahan saat memproses pembayaran'
+						});
+						console.log('Error:', result);
+						// Tetap di halaman pembayaran
 					},
 					onClose: function () {
-						toast.warning('Popup pembayaran ditutup');
+						toast.warning('Pembayaran Dibatalkan', {
+							description: 'Anda menutup halaman pembayaran'
+						});
+						// Tetap di halaman pembayaran
 					}
 				});
 			} else {

@@ -68,7 +68,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 					image: product.image,
 					qty: 1,
 					checked: true,
-					weight: product.weight || 1
+					weight: product.weight || 0 // Simpan dalam gram
 				}
 			];
 		});
@@ -115,7 +115,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	const getTotalWeight = () => {
-		return cartItems.filter((item) => item.checked).reduce((sum, item) => sum + (item.weight || 1) * item.qty, 0);
+		// Konversi dari gram ke kg (bagi 1000)
+		const totalGrams = cartItems
+			.filter((item) => item.checked)
+			.reduce((sum, item) => sum + (item.weight || 0) * item.qty, 0);
+
+		return totalGrams / 1000; // Return dalam kg
 	};
 
 	const clearCart = () => {
