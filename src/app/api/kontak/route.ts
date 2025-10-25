@@ -12,7 +12,8 @@ interface Kontak extends RowDataPacket {
 	longitude: number | null;
 	nomor_telpon: string;
 	email: string | null;
-	jam_operasional: string | null;
+	jam_operasional_weekdays: string | null;
+	jam_operasional_weekend: string | null;
 	created_at: Date;
 	updated_at: Date;
 }
@@ -55,9 +56,14 @@ export async function GET(request: NextRequest) {
 		let dataParams: any[] = [];
 
 		if (search) {
-			dataQuery += ' WHERE lokasi LIKE ? OR nomor_telpon LIKE ? OR email LIKE ? OR jam_operasional LIKE ?';
+			dataQuery += `
+				WHERE lokasi LIKE ? 
+				OR nomor_telpon LIKE ? 
+				OR email LIKE ? 
+				OR jam_operasional_weekdays LIKE ? 
+				OR jam_operasional_weekend LIKE ?`;
 			const searchParam = `%${search}%`;
-			dataParams = [searchParam, searchParam, searchParam, searchParam];
+			dataParams = [searchParam, searchParam, searchParam, searchParam, searchParam];
 		}
 
 		dataQuery += ' ORDER BY id_kontak DESC';
@@ -91,7 +97,8 @@ export async function POST(request: NextRequest) {
 		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
-		const jam_operasional = formData.get('jam_operasional') as string | null;
+		const jam_operasional_weekdays = formData.get('jam_operasional_weekdays') as string | null;
+		const jam_operasional_weekend = formData.get('jam_operasional_weekend') as string | null;
 
 		if (!lokasi || !nomor_telpon) {
 			return NextResponse.json({ message: 'Lokasi dan nomor telepon wajib diisi' }, { status: 400 });
@@ -106,8 +113,10 @@ export async function POST(request: NextRequest) {
 		}
 
 		const [result] = await db.execute<ResultSetHeader>(
-			'INSERT INTO Kontak (deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional) VALUES (?, ?, ?, ?, ?, ?, ?)',
-			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional]
+			`INSERT INTO Kontak 
+			(deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional_weekdays, jam_operasional_weekend)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional_weekdays, jam_operasional_weekend]
 		);
 
 		console.log('Kontak inserted with ID:', result.insertId);
@@ -143,18 +152,11 @@ export async function PUT(request: NextRequest) {
 		const longitude = formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null;
 		const nomor_telpon = formData.get('nomor_telpon') as string;
 		const email = formData.get('email') as string | null;
-		const jam_operasional = formData.get('jam_operasional') as string | null;
+		const jam_operasional_weekdays = formData.get('jam_operasional_weekdays') as string | null;
+		const jam_operasional_weekend = formData.get('jam_operasional_weekend') as string | null;
 
 		if (!id_kontak || !lokasi || !nomor_telpon) {
 			return NextResponse.json({ message: 'ID, lokasi, dan nomor telepon wajib diisi' }, { status: 400 });
-		}
-
-		if (latitude !== null && (latitude < -90 || latitude > 90)) {
-			return NextResponse.json({ message: 'Latitude harus antara -90 dan 90' }, { status: 400 });
-		}
-
-		if (longitude !== null && (longitude < -180 || longitude > 180)) {
-			return NextResponse.json({ message: 'Longitude harus antara -180 dan 180' }, { status: 400 });
 		}
 
 		const [existingRows] = await db.execute<Kontak[]>('SELECT id_kontak FROM Kontak WHERE id_kontak = ?', [
@@ -166,8 +168,11 @@ export async function PUT(request: NextRequest) {
 		}
 
 		await db.execute<ResultSetHeader>(
-			'UPDATE Kontak SET deskripsi=?, lokasi=?, latitude=?, longitude=?, nomor_telpon=?, email=?, jam_operasional=? WHERE id_kontak=?',
-			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional, id_kontak]
+			`UPDATE Kontak 
+			SET deskripsi=?, lokasi=?, latitude=?, longitude=?, nomor_telpon=?, email=?, 
+			jam_operasional_weekdays=?, jam_operasional_weekend=? 
+			WHERE id_kontak=?`,
+			[deskripsi, lokasi, latitude, longitude, nomor_telpon, email, jam_operasional_weekdays, jam_operasional_weekend, id_kontak]
 		);
 
 		console.log('Kontak updated successfully');
