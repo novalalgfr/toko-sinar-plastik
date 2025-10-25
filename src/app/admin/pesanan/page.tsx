@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DataTable, createSortableHeader, createInlineActionColumn } from '@/components/custom/DataTable';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,7 @@ interface ApiResponse {
 	};
 }
 
-export default function PesananPage() {
+function PesananContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -206,7 +207,7 @@ export default function PesananPage() {
 
 			return () => clearTimeout(timeoutId);
 		},
-		[limitFromUrl]
+		[limitFromUrl, router]
 	);
 
 	const handleStatusChange = async (idPesanan: string, newStatus: string) => {
@@ -676,5 +677,13 @@ export default function PesananPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</section>
+	);
+}
+
+export default function PesananPage() {
+	return (
+		<Suspense fallback={<Skeleton variant="table" />}>
+			<PesananContent />
+		</Suspense>
 	);
 }

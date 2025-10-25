@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DataTable, createSortableHeader, createInlineActionColumn } from '@/components/custom/DataTable';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,7 @@ type ApiResponse = {
 	};
 };
 
-export default function ProdukPage() {
+function ProdukContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -118,6 +118,7 @@ export default function ProdukPage() {
 	// Effect untuk fetch data ketika URL params berubah
 	useEffect(() => {
 		fetchProducts(pageFromUrl, limitFromUrl);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [pageFromUrl, limitFromUrl]);
 
 	const handleEdit = (product: Product) => {
@@ -325,5 +326,13 @@ export default function ProdukPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</section>
+	);
+}
+
+export default function ProdukPage() {
+	return (
+		<Suspense fallback={<Skeleton variant="table" />}>
+			<ProdukContent />
+		</Suspense>
 	);
 }

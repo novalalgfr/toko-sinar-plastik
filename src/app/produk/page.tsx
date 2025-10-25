@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ type ApiResponse = {
 	};
 };
 
-export default function ProductPage() {
+function ProductContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { addToCart } = useCart();
@@ -108,7 +108,7 @@ export default function ProductPage() {
 		};
 
 		fetchProducts(pageFromUrl, limitFromUrl);
-	}, [pageFromUrl, limitFromUrl, router]);
+	}, [pageFromUrl, limitFromUrl]);
 
 	const filteredProducts = products
 		.filter((p) => p.nama_produk.toLowerCase().includes(search.toLowerCase()))
@@ -237,5 +237,33 @@ export default function ProductPage() {
 				</>
 			)}
 		</section>
+	);
+}
+
+export default function ProductPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="w-full container mx-auto py-6">
+					<div className="grid sm:grid-cols-4 grid-cols-2 gap-6 animate-pulse">
+						{[...Array(8)].map((_, i) => (
+							<div
+								key={i}
+								className="flex flex-col bg-gray-200 rounded-lg h-80 overflow-hidden"
+							>
+								<div className="w-full h-48 bg-gray-300" />
+								<div className="p-4 space-y-3">
+									<div className="h-4 w-3/4 bg-gray-300 rounded" />
+									<div className="h-4 w-1/2 bg-gray-300 rounded" />
+									<div className="h-8 w-full bg-gray-300 rounded-lg" />
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			}
+		>
+			<ProductContent />
+		</Suspense>
 	);
 }

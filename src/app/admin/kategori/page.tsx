@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DataTable, createInlineActionColumn, createSortableHeader } from '@/components/custom/DataTable';
@@ -44,7 +44,7 @@ type ApiResponse = {
 	};
 };
 
-export default function KategoriPage() {
+function KategoriContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -111,6 +111,7 @@ export default function KategoriPage() {
 
 	useEffect(() => {
 		fetchCategories(pageFromUrl, limitFromUrl);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [pageFromUrl, limitFromUrl]);
 
 	// === aksi edit ===
@@ -270,5 +271,13 @@ export default function KategoriPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</section>
+	);
+}
+
+export default function KategoriPage() {
+	return (
+		<Suspense fallback={<Skeleton variant="table" />}>
+			<KategoriContent />
+		</Suspense>
 	);
 }

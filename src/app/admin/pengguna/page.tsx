@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { DataTable } from '@/components/custom/DataTable';
 
 type Pengaturan = {
@@ -46,7 +47,7 @@ const pengaturanData: Pengaturan[] = [
 	}
 ];
 
-export default function PengaturanPage() {
+function PengaturanContent() {
 	const [data] = React.useState<Pengaturan[]>(pengaturanData);
 
 	const columns = [
@@ -84,5 +85,27 @@ export default function PengaturanPage() {
 				/>
 			</div>
 		</section>
+	);
+}
+
+export default function PengaturanPage() {
+	return (
+		<Suspense
+			fallback={
+				<section>
+					<div className="flex items-center gap-4 mb-4">
+						<h1 className="text-2xl font-bold">Pengaturan Pengguna</h1>
+					</div>
+					<div className="p-4 bg-white rounded-lg shadow">
+						<div className="animate-pulse space-y-4">
+							<div className="h-10 bg-gray-200 rounded" />
+							<div className="h-64 bg-gray-200 rounded" />
+						</div>
+					</div>
+				</section>
+			}
+		>
+			<PengaturanContent />
+		</Suspense>
 	);
 }
