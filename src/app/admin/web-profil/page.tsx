@@ -34,11 +34,12 @@ interface KontakData {
 	id_kontak: number;
 	deskripsi: string | null;
 	lokasi: string;
-	latitude: number | null;
-	longitude: number | null;
+	latitude: string | null;
+	longitude: string | null;
 	nomor_telpon: string;
 	email: string | null;
-	jam_operasional: string | null;
+	jam_operasional_weekdays: string | null;
+	jam_operasional_weekend: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -110,7 +111,8 @@ export default function HalamanWebProfil() {
 		longitude: '',
 		nomor_telpon: '',
 		email: '',
-		jam_operasional: ''
+		jam_operasional_weekdays: '',
+		jam_operasional_weekend: ''
 	});
 
 	const [originalDataKontak, setOriginalDataKontak] = React.useState({
@@ -120,7 +122,8 @@ export default function HalamanWebProfil() {
 		longitude: '',
 		nomor_telpon: '',
 		email: '',
-		jam_operasional: ''
+		jam_operasional_weekdays: '',
+		jam_operasional_weekend: ''
 	});
 
 	React.useEffect(() => {
@@ -185,7 +188,8 @@ export default function HalamanWebProfil() {
 						longitude: kontakData.longitude?.toString() || '',
 						nomor_telpon: kontakData.nomor_telpon || '',
 						email: kontakData.email || '',
-						jam_operasional: kontakData.jam_operasional || ''
+						jam_operasional_weekdays: kontakData.jam_operasional_weekdays || '',
+						jam_operasional_weekend: kontakData.jam_operasional_weekend || ''
 					};
 
 					setFormDataKontak(dataToSet);
@@ -300,7 +304,8 @@ export default function HalamanWebProfil() {
 			data.append('longitude', formDataKontak.longitude);
 			data.append('nomor_telpon', formDataKontak.nomor_telpon);
 			data.append('email', formDataKontak.email);
-			data.append('jam_operasional', formDataKontak.jam_operasional);
+			data.append('jam_operasional_weekdays', formDataKontak.jam_operasional_weekdays);
+			data.append('jam_operasional_weekend', formDataKontak.jam_operasional_weekend);
 
 			const response = await fetch('/api/kontak', {
 				method: 'PUT',
@@ -608,18 +613,32 @@ export default function HalamanWebProfil() {
 								onChange={(e) => handleInputChangeKontak('email', e.target.value)}
 							/>
 						</div>
-						<div className="flex flex-col gap-2 md:col-span-2">
+						<div className="flex flex-col gap-2">
 							<Label
-								htmlFor="jam-operasional"
+								htmlFor="jam-operasional-weekdays"
 								className="mb-2 block"
 							>
-								Jam Operasional
+								Jam Operasional (Hari Kerja)
 							</Label>
 							<Textarea
-								id="jam-operasional"
+								id="jam-operasional-weekdays"
 								placeholder="Contoh: Senin - Jumat: 08.00 - 17.00 WIB"
-								value={formDataKontak.jam_operasional}
-								onChange={(e) => handleInputChangeKontak('jam_operasional', e.target.value)}
+								value={formDataKontak.jam_operasional_weekdays}
+								onChange={(e) => handleInputChangeKontak('jam_operasional_weekdays', e.target.value)}
+							/>
+						</div>
+						<div className="flex flex-col gap-2">
+							<Label
+								htmlFor="jam-operasional-weekend"
+								className="mb-2 block"
+							>
+								Jam Operasional (Akhir Pekan)
+							</Label>
+							<Textarea
+								id="jam-operasional-weekend"
+								placeholder="Contoh: Sabtu - Minggu: 09.00 - 15.00 WIB"
+								value={formDataKontak.jam_operasional_weekend}
+								onChange={(e) => handleInputChangeKontak('jam_operasional_weekend', e.target.value)}
 							/>
 						</div>
 					</div>

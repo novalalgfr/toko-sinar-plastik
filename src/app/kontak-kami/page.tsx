@@ -11,11 +11,8 @@ interface Kontak {
 	longitude: string;
 	nomor_telpon: string;
 	email: string;
-	jam_operasional: {
-		senin_jumat: string;
-		sabtu: string;
-		minggu_libur: string;
-	} | null;
+	jam_operasional_weekdays: string;
+	jam_operasional_weekend: string;
 	created_at: string;
 	updated_at: string;
 }
@@ -117,24 +114,20 @@ export default function KontakKamiPage() {
 							<Clock className="w-5 h-5 text-gray-900" />
 							<h3 className="font-semibold text-gray-900">Jam Operasional</h3>
 						</div>
-						{kontak.jam_operasional ? (
+						{kontak.jam_operasional_weekdays || kontak.jam_operasional_weekend ? (
 							<div className="space-y-3 text-sm">
-								<div className="flex justify-between">
-									<span className="text-gray-600">Senin - Jumat</span>
-									<span className="font-semibold text-gray-900">
-										{kontak.jam_operasional.senin_jumat}
-									</span>
-								</div>
-								<div className="flex justify-between">
-									<span className="text-gray-600">Sabtu</span>
-									<span className="font-semibold text-gray-900">{kontak.jam_operasional.sabtu}</span>
-								</div>
-								<div className="flex justify-between">
-									<span className="text-gray-600">Minggu & Libur</span>
-									<span className="font-semibold text-gray-900">
-										{kontak.jam_operasional.minggu_libur}
-									</span>
-								</div>
+								{kontak.jam_operasional_weekdays && (
+									<div className="flex justify-between">
+										{/* <span className="text-gray-600">Hari Kerja</span> */}
+										<span className="text-gray-900">{kontak.jam_operasional_weekdays}</span>
+									</div>
+								)}
+								{kontak.jam_operasional_weekend && (
+									<div className="flex justify-between">
+										{/* <span className="text-gray-600">Akhir Pekan</span> */}
+										<span className="text-gray-900">{kontak.jam_operasional_weekend}</span>
+									</div>
+								)}
 							</div>
 						) : (
 							<p className="text-sm text-gray-600">Jam operasional belum tersedia.</p>
