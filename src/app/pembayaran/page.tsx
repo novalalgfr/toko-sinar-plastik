@@ -542,7 +542,7 @@ export default function PembayaranPage() {
 									) : userAddress ? (
 										<>
 											<div className="space-y-3">
-												<div className="p-5 border rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+												<div className="p-5 border rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-sm hover:shadow-lg transition-shadow duration-200">
 													<div className="flex items-start justify-between gap-4">
 														<div className="flex-1 min-w-0">
 															<div className="flex items-center gap-2 mb-3">

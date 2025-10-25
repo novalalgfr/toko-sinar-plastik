@@ -103,7 +103,7 @@ export default function OrderHistory() {
 					orders.map((order) => (
 						<Card
 							key={order.id}
-							className="hover:shadow-md transition-shadow cursor-pointer"
+							className="hover:shadow-lg transition-shadow cursor-pointer"
 							onClick={() => setSelectedOrder(order)}
 						>
 							<CardContent className="space-y-4">

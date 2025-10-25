@@ -66,7 +66,7 @@ export default function KontakKamiPage() {
 					{/* Contact Cards */}
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 						{/* Lokasi */}
-						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
 							<div className="flex items-start space-x-4">
 								<MapPin className="w-5 h-5 text-gray-900 mt-1 flex-shrink-0" />
 								<div className="flex-1 min-w-0">
@@ -77,7 +77,7 @@ export default function KontakKamiPage() {
 						</div>
 
 						{/* Telepon */}
-						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
 							<div className="flex items-start space-x-4">
 								<Phone className="w-5 h-5 text-gray-900 mt-1 flex-shrink-0" />
 								<div className="flex-1 min-w-0">
@@ -88,7 +88,7 @@ export default function KontakKamiPage() {
 						</div>
 
 						{/* Email */}
-						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+						<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
 							<div className="flex items-start space-x-4">
 								<Mail className="w-5 h-5 text-gray-900 mt-1 flex-shrink-0" />
 								<div className="flex-1 min-w-0">
@@ -112,7 +112,7 @@ export default function KontakKamiPage() {
 					</div>
 
 					{/* Jam Operasional */}
-					<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+					<div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
 						<div className="flex items-center space-x-3 mb-4">
 							<Clock className="w-5 h-5 text-gray-900" />
 							<h3 className="font-semibold text-gray-900">Jam Operasional</h3>
